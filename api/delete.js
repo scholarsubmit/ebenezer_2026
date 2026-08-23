@@ -32,6 +32,6 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({ ok: true });
   } catch (err) {
     console.error('Delete error:', err);
-    return res.status(500).json({ error: 'Delete failed.' });
+    return res.status(500).json({ error: `Delete failed: ${err && err.message ? err.message : 'unknown server error'}` });
   }
 };

@@ -53,6 +53,6 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({ albums });
   } catch (err) {
     console.error('Gallery list error:', err);
-    return res.status(500).json({ error: 'Could not load the gallery.' });
+    return res.status(500).json({ error: `Could not load the gallery: ${err && err.message ? err.message : 'unknown server error'}` });
   }
 };

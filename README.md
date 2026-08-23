@@ -83,20 +83,27 @@ large files (raw camera exports, etc.), keeping individual photos under
 
 ## Troubleshooting
 
-**"Upload failed" on large photos:** Vercel's server functions cap request
-bodies at 4.5MB. The admin page now automatically shrinks large photos in
-the browser (resizing + re-compressing) before sending them, so this
-should no longer come up in normal use. If uploads still fail, check that:
-- A Blob store is created and connected to the project (Storage tab)
-- `ADMIN_PASSWORD` is set under Settings → Environment Variables
-- The site was redeployed *after* adding the Blob store / password (env
-  var changes only take effect on the next deploy)
+**Start here — visit `/api/health` on your live site** (e.g.
+`https://ebenezer-2026.vercel.app/api/health`). It reports whether the
+server can see your password and your storage connection, without needing
+to attempt an upload at all:
 
-**Upload just says "Uploading…" and never finishes:** this usually means
-the request never reached the server at all — check the same three things
-above, and check your internet connection. The status text will always
-update to a specific ✓ or ✕ result within a few seconds per photo once
-those are correct.
+```json
+{ "adminPasswordConfigured": true, "blobTokenConfigured": true }
+```
+
+If either says `false`, that's the fix needed — set/reconnect it in
+Vercel, then **redeploy** (environment variable changes only apply to the
+next deployment, never the currently-running one).
+
+**"Upload failed" with a specific message:** as of this version, every
+upload failure shows the real reason next to the photo (not just
+"failed") — e.g. incorrect password, missing configuration, or file still
+too large. Whatever it says is the actual problem to fix.
+
+**Large photos:** the admin page automatically shrinks photos in the
+browser before sending them, so normal phone photos should never hit a
+size limit.
 
 ## Editing page text
 

@@ -1,14 +1,10 @@
 // api/upload.js
-// Receives an image file (already compressed client-side, see admin.js)
-// as the raw request body, checks the admin password, and stores it in
-// Vercel Blob under gallery/<album>/<file>.
-// The browser sends: POST /api/upload?album=day-1-opening&filename=IMG_01.jpg
+// Receives a compressed image as base64 inside a normal JSON body (the
+// most reliably auto-parsed request type on Vercel — no manual stream
+// reading, no bodyParser config needed), checks the admin password, and
+// stores the decoded image in Vercel Blob under gallery/<album>/<file>.
 
 const { put } = require('@vercel/blob');
-
-module.exports.config = {
-  api: { bodyParser: false },
-};
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -16,46 +12,61 @@ module.exports = async function handler(req, res) {
   }
 
   const password = req.headers['x-admin-password'];
+
   if (!process.env.ADMIN_PASSWORD) {
-    return res.status(500).json({ error: 'Server is not configured with ADMIN_PASSWORD yet.' });
+    return res.status(500).json({
+      error: 'Server is missing ADMIN_PASSWORD. Set it in Vercel → Settings → Environment Variables, then redeploy.',
+    });
   }
   if (password !== process.env.ADMIN_PASSWORD) {
     return res.status(401).json({ error: 'Incorrect password.' });
   }
+  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    return res.status(500).json({
+      error: 'Blob storage is not connected to this project. Connect it in Vercel → Storage, then redeploy.',
+    });
+  }
 
-  const album = String(req.query.album || '').toLowerCase().trim();
-  const filename = String(req.query.filename || '').trim();
+  let body = req.body;
+  if (typeof body === 'string') {
+    try { body = JSON.parse(body); } catch (e) { body = null; }
+  }
+  if (!body || typeof body !== 'object') {
+    return res.status(400).json({ error: 'Missing or invalid request body.' });
+  }
 
-  const safeAlbum = album.replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '');
-  const safeFilename = filename.replace(/[^a-zA-Z0-9._-]/g, '-');
+  const { album, filename, contentType, dataBase64 } = body;
+
+  const safeAlbum = String(album || '').toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '');
+  const safeFilename = String(filename || '').replace(/[^a-zA-Z0-9._-]/g, '-');
 
   if (!safeAlbum) return res.status(400).json({ error: 'Missing or invalid album name.' });
   if (!safeFilename) return res.status(400).json({ error: 'Missing or invalid file name.' });
+  if (!dataBase64) return res.status(400).json({ error: 'No image data received.' });
+
+  let buffer;
+  try {
+    buffer = Buffer.from(dataBase64, 'base64');
+  } catch (e) {
+    return res.status(400).json({ error: 'Could not decode image data.' });
+  }
+
+  if (buffer.length === 0) {
+    return res.status(400).json({ error: 'File is empty.' });
+  }
+  if (buffer.length > 4 * 1024 * 1024) {
+    return res.status(400).json({ error: 'File is still too large after compression (max 4MB). Try a smaller photo.' });
+  }
 
   try {
-    const chunks = [];
-    for await (const chunk of req) chunks.push(chunk);
-    const buffer = Buffer.concat(chunks);
-
-    if (buffer.length === 0) {
-      return res.status(400).json({ error: 'File is empty.' });
-    }
-    // Vercel serverless functions cap request bodies at 4.5MB — the
-    // browser compresses photos before sending, so this should rarely
-    // trip, but we check anyway with a clear message.
-    if (buffer.length > 4 * 1024 * 1024) {
-      return res.status(400).json({ error: 'File is still too large after compression (max 4MB). Try a smaller photo.' });
-    }
-
     const key = `gallery/${safeAlbum}/${Date.now()}-${safeFilename}`;
     const blob = await put(key, buffer, {
       access: 'public',
-      contentType: req.headers['content-type'] || 'application/octet-stream',
+      contentType: contentType || 'application/octet-stream',
     });
-
     return res.status(200).json({ url: blob.url, pathname: blob.pathname });
   } catch (err) {
     console.error('Upload error:', err);
-    return res.status(500).json({ error: 'Upload failed. Please try again.' });
+    return res.status(500).json({ error: `Upload failed: ${err && err.message ? err.message : 'unknown server error'}` });
   }
 };

@@ -85,17 +85,18 @@
 
   // Tries progressively smaller/lower-quality passes until the result
   // fits comfortably under the server's limit, or gives up after a few tries.
+  // Target is lower than the server's raw limit because the file is sent
+  // as base64 text, which is ~33% larger than the original bytes.
   async function prepareForUpload(file) {
-    const SAFE_LIMIT = 3.5 * 1024 * 1024; // leave headroom under the 4MB server check
+    const SAFE_LIMIT = 2.2 * 1024 * 1024; // ~2.2MB blob -> ~2.9MB base64, well under the 4MB server check
     if (file.size <= SAFE_LIMIT && /^image\/(jpeg|png|webp)$/.test(file.type)) {
-      // Small enough already — send as-is, no re-encoding needed.
       return { blob: file, renamedJpeg: false };
     }
     const attempts = [
-      { maxDim: 2200, quality: 0.85 },
-      { maxDim: 1800, quality: 0.8 },
-      { maxDim: 1400, quality: 0.75 },
-      { maxDim: 1100, quality: 0.7 },
+      { maxDim: 2000, quality: 0.82 },
+      { maxDim: 1600, quality: 0.78 },
+      { maxDim: 1300, quality: 0.72 },
+      { maxDim: 1000, quality: 0.68 },
     ];
     let lastErr;
     for (const attempt of attempts) {
@@ -110,6 +111,19 @@
       }
     }
     throw lastErr || new Error('Could not compress image enough to upload.');
+  }
+
+  function blobToBase64(blob) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = String(reader.result || '');
+        const commaIdx = result.indexOf(',');
+        resolve(commaIdx >= 0 ? result.slice(commaIdx + 1) : result);
+      };
+      reader.onerror = () => reject(new Error('Could not read the compressed image'));
+      reader.readAsDataURL(blob);
+    });
   }
 
   async function fetchGallery() {
@@ -301,14 +315,13 @@
 
   // ---------------- upload ----------------
 
-  function xhrUpload(blob, contentType, albumSlug, filename, item, statusEl, barEl) {
+  function xhrUpload(payload, item, statusEl, barEl) {
     return new Promise((resolve) => {
-      const url = `/api/upload?album=${encodeURIComponent(albumSlug)}&filename=${encodeURIComponent(filename)}`;
       const xhr = new XMLHttpRequest();
       item.xhr = xhr;
 
-      xhr.open('POST', url, true);
-      xhr.setRequestHeader('Content-Type', contentType || 'application/octet-stream');
+      xhr.open('POST', '/api/upload', true);
+      xhr.setRequestHeader('Content-Type', 'application/json');
       xhr.setRequestHeader('x-admin-password', password);
 
       xhr.upload.addEventListener('progress', (e) => {
@@ -330,7 +343,7 @@
         } else {
           item.status = 'error';
           const b = barEl(); if (b) { b.style.width = '100%'; b.classList.add('upload-bar-error'); }
-          const s = statusEl(); if (s) s.textContent = `✕ ${data.error || 'Upload failed'}`;
+          const s = statusEl(); if (s) s.textContent = `✕ ${data.error || `Upload failed (HTTP ${xhr.status})`}`;
         }
         item.xhr = null;
         resolve();
@@ -347,12 +360,12 @@
       xhr.onerror = () => {
         item.status = 'error';
         item.xhr = null;
-        const s = statusEl(); if (s) s.textContent = '✕ Network error';
+        const s = statusEl(); if (s) s.textContent = '✕ Network error — could not reach the server';
         const b = barEl(); if (b) { b.style.width = '100%'; b.classList.add('upload-bar-error'); }
         resolve();
       };
 
-      xhr.send(blob);
+      xhr.send(JSON.stringify(payload));
     });
   }
 
@@ -362,7 +375,7 @@
 
     item.status = 'uploading';
     renderFileList();
-    let s = statusEl(); if (s) s.textContent = 'Preparing…';
+    let s = statusEl(); if (s) s.textContent = 'Compressing…';
 
     let prepared;
     try {
@@ -381,7 +394,20 @@
     }
     const contentType = prepared.renamedJpeg ? 'image/jpeg' : (item.file.type || 'application/octet-stream');
 
-    await xhrUpload(prepared.blob, contentType, albumSlug, safeName, item, statusEl, barEl);
+    s = statusEl(); if (s) s.textContent = 'Encoding…';
+    let dataBase64;
+    try {
+      dataBase64 = await blobToBase64(prepared.blob);
+    } catch (err) {
+      item.status = 'error';
+      s = statusEl(); if (s) s.textContent = `✕ ${err.message || 'Could not prepare photo for upload'}`;
+      const b = barEl(); if (b) { b.style.width = '100%'; b.classList.add('upload-bar-error'); }
+      renderFileList();
+      return;
+    }
+
+    const payload = { album: albumSlug, filename: safeName, contentType, dataBase64 };
+    await xhrUpload(payload, item, statusEl, barEl);
     renderFileList();
   }
 
