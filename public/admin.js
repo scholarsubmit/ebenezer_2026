@@ -15,6 +15,49 @@
   const cancelAllBtn = document.getElementById('cancel-all-btn');
   const overallStatus = document.getElementById('overall-status');
   const manageGrid = document.getElementById('manage-grid');
+  const toastContainer = document.getElementById('toast-container');
+  const confirmOverlay = document.getElementById('confirm-overlay');
+  const confirmMessage = document.getElementById('confirm-message');
+  const confirmOkBtn = document.getElementById('confirm-ok');
+  const confirmCancelBtn = document.getElementById('confirm-cancel');
+
+  // ---------------- in-page notifications (no native alert/confirm) ----------------
+
+  function showToast(message, type = 'info', duration = 4500) {
+    if (!toastContainer) return;
+    const el = document.createElement('div');
+    el.className = `toast toast-${type}`;
+    el.innerHTML = `<span>${message}</span><button type="button" class="toast-close" aria-label="Dismiss">✕</button>`;
+    const remove = () => {
+      el.style.opacity = '0';
+      setTimeout(() => el.remove(), 150);
+    };
+    el.querySelector('.toast-close').addEventListener('click', remove);
+    toastContainer.appendChild(el);
+    setTimeout(remove, duration);
+  }
+
+  function showConfirm(message) {
+    return new Promise((resolve) => {
+      confirmMessage.textContent = message;
+      confirmOverlay.classList.add('open');
+
+      const cleanup = (result) => {
+        confirmOverlay.classList.remove('open');
+        confirmOkBtn.removeEventListener('click', onOk);
+        confirmCancelBtn.removeEventListener('click', onCancel);
+        confirmOverlay.removeEventListener('click', onOverlay);
+        resolve(result);
+      };
+      const onOk = () => cleanup(true);
+      const onCancel = () => cleanup(false);
+      const onOverlay = (e) => { if (e.target === confirmOverlay) cleanup(false); };
+
+      confirmOkBtn.addEventListener('click', onOk);
+      confirmCancelBtn.addEventListener('click', onCancel);
+      confirmOverlay.addEventListener('click', onOverlay);
+    });
+  }
 
   let password = sessionStorage.getItem('ebenezer_admin_pw') || '';
   let currentAlbums = [];
@@ -166,7 +209,8 @@
   }
 
   async function deletePhoto(pathname, cellEl) {
-    if (!confirm('Remove this photo permanently?')) return;
+    const ok = await showConfirm('Remove this photo permanently? This cannot be undone.');
+    if (!ok) return;
     cellEl.style.opacity = '0.4';
     try {
       const res = await fetch('/api/delete', {
@@ -177,8 +221,9 @@
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Delete failed');
       cellEl.remove();
+      showToast('Photo removed.', 'success');
     } catch (err) {
-      alert(err.message);
+      showToast(err.message || 'Could not delete this photo.', 'error');
       cellEl.style.opacity = '1';
     }
   }
@@ -414,7 +459,7 @@
   async function uploadAll() {
     const albumSlug = albumSelect.value || slugify(newAlbumInput.value || '');
     if (!albumSlug) {
-      alert('Please choose or type an album name first.');
+      showToast('Please choose or type an album name first.', 'error');
       return;
     }
     const toUpload = queue.filter((q) => q.status === 'ready');
@@ -436,6 +481,20 @@
       overallStatus.textContent = batchCancelled
         ? 'Upload batch cancelled.'
         : `Done — ${toUpload.length} photo(s) processed.`;
+    }
+
+    if (!batchCancelled) {
+      const doneCount = toUpload.filter((q) => q.status === 'done').length;
+      const failCount = toUpload.length - doneCount;
+      if (failCount === 0) {
+        showToast(`${doneCount} photo${doneCount === 1 ? '' : 's'} uploaded successfully.`, 'success');
+      } else if (doneCount === 0) {
+        showToast(`Upload failed for all ${failCount} photo(s). Check the message next to each one.`, 'error');
+      } else {
+        showToast(`${doneCount} uploaded, ${failCount} failed — check the messages below.`, 'error');
+      }
+    } else {
+      showToast('Upload batch cancelled.', 'info');
     }
 
     isUploading = false;

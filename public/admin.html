@@ -36,6 +36,20 @@
   <h1>Upload Convention Photos</h1>
 </section>
 
+<!-- In-page notifications — replaces native browser alert() popups -->
+<div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+<!-- In-page confirm dialog — replaces native browser confirm() popups -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-box">
+    <p id="confirm-message">Are you sure?</p>
+    <div class="confirm-actions">
+      <button type="button" class="btn btn-ghost-royal" id="confirm-cancel">Cancel</button>
+      <button type="button" class="btn btn-gold" id="confirm-ok">Delete</button>
+    </div>
+  </div>
+</div>
+
 <section class="section">
   <div class="wrap" style="max-width: 720px;">
 
