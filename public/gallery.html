@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Photo Archive — EBENEZER 2026</title>
+<meta name="description" content="Browse every photo from the EBENEZER 2026 Unity Convention, day by day." />
+<link rel="icon" href="/images/logo.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Source+Sans+3:wght@400;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <nav class="nav">
+    <a class="brand" href="/">
+      <img src="/images/logo.png" alt="Christ Ascension Church crest" />
+      <span class="brand-text">
+        <strong>Christ Ascension Church</strong>
+        <span>Lifters Power Assembly</span>
+      </span>
+    </a>
+    <button class="nav-toggle" aria-label="Toggle menu">Menu</button>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="/gallery.html">Gallery</a>
+      <a href="/about.html">About</a>
+    </div>
+  </nav>
+</header>
+
+<section class="page-hero">
+  <p class="eyebrow">The Full Record</p>
+  <h1>EBENEZER 2026 Photo Archive</h1>
+</section>
+
+<section class="section">
+  <div class="wrap">
+
+    <div class="upload-note">
+      <strong>Convention media team:</strong> new photos can be added straight from your phone or
+      laptop — no computer setup needed. <a href="/admin.html">Go to the upload page →</a>
+    </div>
+
+    <div class="gallery-toolbar" id="gallery-toolbar"></div>
+
+    <div id="gallery-root">
+      <div class="empty-state">
+        <h3>Loading the archive…</h3>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<div class="lightbox" id="lightbox">
+  <button class="lightbox-close" id="lightbox-close" aria-label="Close">✕</button>
+  <button class="lightbox-nav lightbox-prev" id="lightbox-prev" aria-label="Previous photo">‹</button>
+  <img id="lightbox-img" src="" alt="" />
+  <button class="lightbox-nav lightbox-next" id="lightbox-next" aria-label="Next photo">›</button>
+  <p class="lightbox-caption" id="lightbox-caption"></p>
+</div>
+
+<footer class="site-footer">
+  <div class="footer-grid">
+    <div>
+      <div class="footer-brand">
+        <img src="/images/logo.png" alt="Christ Ascension Church crest" />
+        <strong>Christ Ascension Church</strong>
+      </div>
+      <p>Lifters Power Assembly · 1984 Foundation Constitution</p>
+    </div>
+    <div>
+      <h4>Explore</h4>
+      <p><a href="/">Home</a></p>
+      <p><a href="/gallery.html">Photo Archive</a></p>
+      <p><a href="/about.html">About</a></p>
+      <p><a href="/admin.html">Committee Upload</a></p>
+    </div>
+    <div>
+      <h4>This Site</h4>
+      <p>Kept for every member who stood in the camp, and every member who could only stand in prayer.</p>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© <span id="year"></span> Christ Ascension Church — Lifters Power Assembly</span>
+    <span>EBENEZER 2026 Unity Convention Archive</span>
+  </div>
+</footer>
+
+<script src="/site.js"></script>
+<script src="/gallery.js"></script>
+<script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+</body>
+</html>
