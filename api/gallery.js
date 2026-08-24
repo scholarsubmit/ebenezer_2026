@@ -37,6 +37,7 @@ module.exports = async function handler(req, res) {
         alt: `${titleCase(slug)} photo`,
         pathname: b.pathname,
         uploadedAt: b.uploadedAt,
+        size: b.size || 0,
       });
     }
 

@@ -6,6 +6,7 @@
   const gateError = document.getElementById('gate-error');
 
   const albumSelect = document.getElementById('album-select');
+  const manageAlbumSelect = document.getElementById('manage-album-select');
   const newAlbumInput = document.getElementById('new-album-input');
   const dropzone = document.getElementById('dropzone');
   const dropzoneText = document.getElementById('dropzone-text');
@@ -15,6 +16,11 @@
   const cancelAllBtn = document.getElementById('cancel-all-btn');
   const overallStatus = document.getElementById('overall-status');
   const manageGrid = document.getElementById('manage-grid');
+  const storageValueEl = document.getElementById('storage-value');
+  const storageSubEl = document.getElementById('storage-sub');
+  const navLinks = document.querySelectorAll('.admin-nav-link[data-panel]');
+  const panelUpload = document.getElementById('panel-upload');
+  const panelManage = document.getElementById('panel-manage');
   const toastContainer = document.getElementById('toast-container');
   const confirmOverlay = document.getElementById('confirm-overlay');
   const confirmMessage = document.getElementById('confirm-message');
@@ -57,6 +63,34 @@
       confirmCancelBtn.addEventListener('click', onCancel);
       confirmOverlay.addEventListener('click', onOverlay);
     });
+  }
+
+  // ---------------- sidebar panel switching ----------------
+
+  function switchPanel(name) {
+    const isUpload = name === 'upload';
+    if (panelUpload) panelUpload.style.display = isUpload ? '' : 'none';
+    if (panelManage) panelManage.style.display = isUpload ? 'none' : '';
+    navLinks.forEach((btn) => btn.classList.toggle('active', btn.dataset.panel === name));
+  }
+  navLinks.forEach((btn) => btn.addEventListener('click', () => switchPanel(btn.dataset.panel)));
+
+  // ---------------- storage widget (real numbers from Blob metadata) ----------------
+
+  function formatBytes(bytes) {
+    if (!bytes) return '0 MB';
+    const mb = bytes / (1024 * 1024);
+    if (mb < 1024) return `${mb.toFixed(1)} MB`;
+    return `${(mb / 1024).toFixed(2)} GB`;
+  }
+
+  function updateStorageWidget() {
+    if (!storageValueEl) return;
+    let totalBytes = 0;
+    let totalPhotos = 0;
+    currentAlbums.forEach((a) => a.photos.forEach((p) => { totalBytes += p.size || 0; totalPhotos++; }));
+    storageValueEl.textContent = formatBytes(totalBytes);
+    storageSubEl.textContent = `${totalPhotos} photo${totalPhotos === 1 ? '' : 's'} across ${currentAlbums.length} session${currentAlbums.length === 1 ? '' : 's'}`;
   }
 
   let password = sessionStorage.getItem('ebenezer_admin_pw') || '';
@@ -178,22 +212,42 @@
 
   function populateAlbumSelect() {
     const prevValue = albumSelect.value;
-    albumSelect.innerHTML = '<option value="">— Select existing album —</option>';
+    const prevManageValue = manageAlbumSelect ? manageAlbumSelect.value : '';
+
+    albumSelect.innerHTML = '<option value="">— Select existing session —</option>';
+    if (manageAlbumSelect) manageAlbumSelect.innerHTML = '<option value="">— Select a session —</option>';
+
     currentAlbums.forEach((a) => {
+      const label = `${a.title} (${a.count})`;
       const opt = document.createElement('option');
       opt.value = a.slug;
-      opt.textContent = `${a.title} (${a.count})`;
+      opt.textContent = label;
       albumSelect.appendChild(opt);
+
+      if (manageAlbumSelect) {
+        const opt2 = document.createElement('option');
+        opt2.value = a.slug;
+        opt2.textContent = label;
+        manageAlbumSelect.appendChild(opt2);
+      }
     });
+
     if (currentAlbums.some((a) => a.slug === prevValue)) albumSelect.value = prevValue;
+    if (manageAlbumSelect && currentAlbums.some((a) => a.slug === prevManageValue)) {
+      manageAlbumSelect.value = prevManageValue;
+    }
   }
 
   function renderManageGrid() {
-    const chosenSlug = albumSelect.value || slugify(newAlbumInput.value || '');
+    const chosenSlug = manageAlbumSelect ? manageAlbumSelect.value : '';
     const album = currentAlbums.find((a) => a.slug === chosenSlug);
     manageGrid.innerHTML = '';
+    if (!chosenSlug) {
+      manageGrid.innerHTML = '<p class="admin-hint">Choose a session above to see its photos.</p>';
+      return;
+    }
     if (!album || !album.photos.length) {
-      manageGrid.innerHTML = '<p class="admin-hint">No photos in this album yet.</p>';
+      manageGrid.innerHTML = '<p class="admin-hint">No photos in this session yet.</p>';
       return;
     }
     album.photos.forEach((p) => {
@@ -262,6 +316,7 @@
     await fetchGallery();
     populateAlbumSelect();
     renderManageGrid();
+    updateStorageWidget();
   }
 
   // ---------------- file queue: add / remove / preview / edit ----------------
@@ -509,6 +564,10 @@
     await refreshAlbums();
     const opt = Array.from(albumSelect.options).find((o) => o.value === albumSlug);
     if (opt) albumSelect.value = albumSlug;
+    if (manageAlbumSelect) {
+      const opt2 = Array.from(manageAlbumSelect.options).find((o) => o.value === albumSlug);
+      if (opt2) manageAlbumSelect.value = albumSlug;
+    }
     renderManageGrid();
   }
 
@@ -540,8 +599,9 @@
 
   uploadBtn.addEventListener('click', uploadAll);
   if (cancelAllBtn) cancelAllBtn.addEventListener('click', cancelAllUploads);
-  albumSelect.addEventListener('change', () => { newAlbumInput.value = ''; renderManageGrid(); });
-  newAlbumInput.addEventListener('input', () => { if (newAlbumInput.value) albumSelect.value = ''; renderManageGrid(); });
+  albumSelect.addEventListener('change', () => { newAlbumInput.value = ''; });
+  newAlbumInput.addEventListener('input', () => { if (newAlbumInput.value) albumSelect.value = ''; });
+  if (manageAlbumSelect) manageAlbumSelect.addEventListener('change', renderManageGrid);
 
   if (password) {
     gate.style.display = 'none';

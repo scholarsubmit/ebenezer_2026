@@ -691,6 +691,175 @@ body {
   .filmstrip-thumb { width: 50px; height: 50px; }
 }
 
+/* =====================================================================
+   Photo Archive — dark dashboard-style page (album cards + pagination)
+   ===================================================================== */
+
+body.page-gallery {
+  background: var(--royal-dark);
+  color: rgba(255,255,255,0.88);
+}
+
+body.page-gallery .site-header {
+  background: rgba(15,33,61,0.94);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+body.page-gallery .brand-text strong { color: var(--white); }
+body.page-gallery .brand-text span { color: var(--gold-bright); opacity: 1; }
+body.page-gallery .nav-links a { color: rgba(255,255,255,0.72); }
+body.page-gallery .nav-links a:hover,
+body.page-gallery .nav-links a.active { color: var(--gold-bright); border-bottom-color: var(--gold-bright); }
+body.page-gallery .nav-toggle { border-color: rgba(255,255,255,0.3); color: var(--white); }
+
+@media (max-width: 720px) {
+  body.page-gallery .nav-links { background: var(--royal-dark); }
+  body.page-gallery .nav-links a { border-bottom-color: rgba(255,255,255,0.08); }
+}
+
+.pa-hero { padding: 52px 24px 32px; }
+.pa-eyebrow {
+  font-family: var(--font-label);
+  font-size: 0.78rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--gold-bright);
+  margin: 0 0 10px;
+}
+.pa-hero h1 {
+  font-family: var(--font-display);
+  font-size: clamp(2.1rem, 4.5vw, 3.1rem);
+  margin: 0 0 12px;
+  color: var(--white);
+}
+.pa-sub { max-width: 580px; color: rgba(255,255,255,0.65); font-size: 1rem; margin: 0; }
+
+.pa-toolbar-section { padding: 0 24px 30px; }
+.pa-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.pa-select {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.16);
+  color: var(--white);
+  padding: 11px 14px;
+  border-radius: 6px;
+  font-family: var(--font-label);
+  font-size: 0.86rem;
+}
+.pa-select option { color: var(--ink); }
+
+.pa-search { flex: 1; min-width: 200px; }
+.pa-search input {
+  width: 100%;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.16);
+  color: var(--white);
+  padding: 11px 14px;
+  border-radius: 6px;
+  font-family: var(--font-body);
+  font-size: 0.92rem;
+}
+.pa-search input::placeholder { color: rgba(255,255,255,0.4); }
+.pa-search input:focus { outline: none; border-color: var(--gold-bright); }
+
+.pa-upload-btn { margin-left: auto; text-decoration: none; }
+
+.pa-content { padding-top: 0; }
+
+.pa-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+.pa-breadcrumb button {
+  background: none;
+  border: 1px solid rgba(255,255,255,0.2);
+  color: var(--white);
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-family: var(--font-label);
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+.pa-breadcrumb button:hover { border-color: var(--gold-bright); color: var(--gold-bright); }
+.pa-breadcrumb h2 { font-family: var(--font-display); color: var(--white); font-size: 1.4rem; margin: 0; }
+.pa-breadcrumb span { color: rgba(255,255,255,0.5); font-family: var(--font-label); font-size: 0.82rem; }
+
+.albums-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 20px;
+}
+
+.album-card {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  text-align: left;
+  padding: 0;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.album-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--gold-bright);
+  box-shadow: 0 14px 30px rgba(0,0,0,0.3);
+}
+.album-card .cover { aspect-ratio: 4 / 3; overflow: hidden; background: rgba(255,255,255,0.05); }
+.album-card .cover img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease; }
+.album-card:hover .cover img { transform: scale(1.05); }
+.album-card .meta { padding: 14px 16px; }
+.album-card .meta h3 { font-family: var(--font-display); font-size: 1.02rem; color: var(--white); margin: 0 0 4px; }
+.album-card .meta span { font-family: var(--font-label); font-size: 0.78rem; color: rgba(255,255,255,0.55); }
+
+body.page-gallery .photo-grid button {
+  background: rgba(255,255,255,0.05);
+  border-color: rgba(255,255,255,0.1);
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 32px;
+  flex-wrap: wrap;
+}
+.pagination button {
+  min-width: 38px;
+  height: 38px;
+  padding: 0 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.16);
+  background: rgba(255,255,255,0.05);
+  color: var(--white);
+  font-family: var(--font-label);
+  font-size: 0.84rem;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.pagination button:hover:not(:disabled) { border-color: var(--gold-bright); }
+.pagination button.active {
+  background: var(--gold-bright);
+  color: var(--royal-dark);
+  border-color: var(--gold-bright);
+  font-weight: 700;
+}
+.pagination button:disabled { opacity: 0.35; cursor: not-allowed; }
+.pagination .pg-ellipsis { color: rgba(255,255,255,0.4); padding: 0 4px; font-family: var(--font-label); }
+
+body.page-gallery .empty-state { color: rgba(255,255,255,0.6); }
+body.page-gallery .empty-state h3 { color: var(--white); }
+
 /* ---------------- about page ---------------- */
 .about-grid {
   display: grid;
@@ -1177,4 +1346,186 @@ body {
   display: flex;
   gap: 10px;
   justify-content: center;
+}
+
+/* =====================================================================
+   Admin dashboard shell (sidebar layout)
+   ===================================================================== */
+
+body.page-admin {
+  background: var(--royal-dark);
+  color: rgba(255,255,255,0.9);
+  margin: 0;
+}
+
+.admin-shell {
+  display: flex;
+  min-height: 100vh;
+}
+
+.admin-sidebar {
+  width: 264px;
+  flex-shrink: 0;
+  background: rgba(255,255,255,0.03);
+  border-right: 1px solid rgba(255,255,255,0.08);
+  display: flex;
+  flex-direction: column;
+  padding: 24px 18px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.admin-sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: var(--white);
+  padding-bottom: 20px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.admin-sidebar-brand img {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: center;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 2px rgba(255,255,255,0.12);
+}
+.admin-sidebar-brand strong {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 0.92rem;
+  line-height: 1.25;
+}
+.admin-sidebar-brand span {
+  display: block;
+  font-family: var(--font-label);
+  font-size: 0.66rem;
+  color: var(--gold-bright);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-top: 3px;
+}
+
+.admin-sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.admin-nav-link {
+  display: block;
+  text-align: left;
+  width: 100%;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.68);
+  padding: 11px 14px;
+  border-radius: 8px;
+  font-family: var(--font-label);
+  font-size: 0.87rem;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.admin-nav-link:hover { background: rgba(255,255,255,0.06); color: var(--white); }
+.admin-nav-link.active {
+  background: rgba(242,183,5,0.15);
+  color: var(--gold-bright);
+  font-weight: 600;
+}
+
+.admin-storage {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+.admin-storage-label {
+  font-family: var(--font-label);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: rgba(255,255,255,0.42);
+  margin: 0 0 6px;
+}
+.admin-storage-value {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  color: var(--white);
+  margin: 0;
+}
+.admin-storage-sub {
+  font-family: var(--font-label);
+  font-size: 0.74rem;
+  color: rgba(255,255,255,0.48);
+  margin: 4px 0 0;
+}
+
+.admin-main {
+  flex: 1;
+  min-width: 0;
+  padding: 32px 36px 60px;
+}
+
+.admin-topbar { margin-bottom: 26px; }
+.admin-topbar h1 {
+  font-family: var(--font-display);
+  color: var(--white);
+  font-size: 1.7rem;
+  margin: 4px 0 0;
+}
+
+body.page-admin .admin-card {
+  background: rgba(255,255,255,0.04);
+  border-color: rgba(255,255,255,0.1);
+}
+body.page-admin .admin-card h3 { color: var(--white); }
+body.page-admin .admin-hint { color: rgba(255,255,255,0.55); }
+body.page-admin .admin-row input,
+body.page-admin .admin-row select {
+  background: rgba(255,255,255,0.05);
+  border-color: rgba(255,255,255,0.15);
+  color: var(--white);
+}
+body.page-admin .admin-row select option { color: var(--ink); }
+body.page-admin .dropzone {
+  background: rgba(255,255,255,0.04);
+  border-color: rgba(255,255,255,0.18);
+  color: rgba(255,255,255,0.55);
+}
+body.page-admin .dropzone.dragover {
+  border-color: var(--gold-bright);
+  background: rgba(242,183,5,0.08);
+  color: var(--gold-bright);
+}
+body.page-admin .upload-item { border-bottom-color: rgba(255,255,255,0.1); }
+body.page-admin .upload-name-input { color: var(--white); }
+body.page-admin .upload-name-input:not(:disabled):hover,
+body.page-admin .upload-name-input:not(:disabled):focus { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.2); }
+body.page-admin .upload-bar-track { background: rgba(255,255,255,0.14); }
+body.page-admin .manage-cell { border-color: rgba(255,255,255,0.1); }
+body.page-admin .upload-remove-one,
+body.page-admin .upload-cancel-one { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.7); border-color: rgba(255,255,255,0.15); }
+
+@media (max-width: 900px) {
+  .admin-shell { flex-direction: column; }
+  .admin-sidebar {
+    width: 100%;
+    height: auto;
+    position: relative;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px;
+  }
+  .admin-sidebar-brand { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
+  .admin-sidebar-nav { flex-direction: row; flex-wrap: wrap; flex: 1; }
+  .admin-storage { display: none; }
+  .admin-main { padding: 24px 20px 50px; }
 }

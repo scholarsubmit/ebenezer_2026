@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Admin — Upload Photos — EBENEZER 2026</title>
+<title>Media Team — EBENEZER 2026</title>
 <meta name="robots" content="noindex, nofollow" />
 <link rel="icon" href="/images/logo.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -11,30 +11,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Source+Sans+3:wght@400;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/styles.css" />
 </head>
-<body>
-
-<header class="site-header">
-  <nav class="nav">
-    <a class="brand" href="/">
-      <img src="/images/logo.png" alt="Christ Ascension Church crest" />
-      <span class="brand-text">
-        <strong>Christ Ascension Church</strong>
-        <span>Lifters Power Assembly</span>
-      </span>
-    </a>
-    <button class="nav-toggle" aria-label="Toggle menu">Menu</button>
-    <div class="nav-links">
-      <a href="/">Home</a>
-      <a href="/gallery.html">Gallery</a>
-      <a href="/about.html">About</a>
-    </div>
-  </nav>
-</header>
-
-<section class="page-hero">
-  <p class="eyebrow">Committee Access</p>
-  <h1>Upload Convention Photos</h1>
-</section>
+<body class="page-admin">
 
 <!-- In-page notifications — replaces native browser alert() popups -->
 <div class="toast-container" id="toast-container" aria-live="polite"></div>
@@ -50,11 +27,38 @@
   </div>
 </div>
 
-<section class="section">
-  <div class="wrap" style="max-width: 720px;">
+<div class="admin-shell">
+
+  <aside class="admin-sidebar">
+    <a href="/" class="admin-sidebar-brand">
+      <img src="/images/logo.png" alt="Christ Ascension Church crest" />
+      <div>
+        <strong>Christ Ascension Church</strong>
+        <span>Media Team</span>
+      </div>
+    </a>
+
+    <nav class="admin-sidebar-nav">
+      <button type="button" class="admin-nav-link active" data-panel="upload">📤 Upload Photos</button>
+      <button type="button" class="admin-nav-link" data-panel="manage">🗂 Manage Photos</button>
+      <a class="admin-nav-link" href="/gallery.html" target="_blank" rel="noopener">🖼 View Public Gallery ↗</a>
+    </nav>
+
+    <div class="admin-storage">
+      <p class="admin-storage-label">Storage Used</p>
+      <p class="admin-storage-value" id="storage-value">—</p>
+      <p class="admin-storage-sub" id="storage-sub">Sign in to load stats</p>
+    </div>
+  </aside>
+
+  <main class="admin-main">
+    <div class="admin-topbar">
+      <p class="eyebrow" style="color:var(--gold-bright); opacity:1;">Committee Access</p>
+      <h1>Photo Management</h1>
+    </div>
 
     <!-- Password gate -->
-    <div id="gate" class="admin-card">
+    <div id="gate" class="admin-card" style="max-width:520px;">
       <h3>Enter the upload password</h3>
       <p class="admin-hint">Ask the convention media team for this password if you don't have it.</p>
       <div class="admin-row">
@@ -64,73 +68,51 @@
       <p class="admin-error" id="gate-error"></p>
     </div>
 
-    <!-- Upload panel (hidden until unlocked) -->
+    <!-- Panels (hidden until unlocked) -->
     <div id="panel" style="display:none;">
 
-      <div class="admin-card">
-        <h3>1. Choose or create an album</h3>
-        <p class="admin-hint">Albums group photos by day or session (e.g. "Day 1 Opening"). Pick an existing one or type a new name.</p>
-        <div class="admin-row">
-          <select id="album-select"></select>
-          <span style="align-self:center; color:#8a806a; font-size:0.85rem;">or</span>
-          <input type="text" id="new-album-input" placeholder="New album name, e.g. Youth Night" />
+      <div id="panel-upload">
+        <div class="admin-card">
+          <h3>1. Choose or create a session</h3>
+          <p class="admin-hint">Sessions group photos by day or moment (e.g. "Day 1 Opening"). Pick an existing one or type a new name.</p>
+          <div class="admin-row">
+            <select id="album-select"></select>
+            <span style="align-self:center; color:rgba(255,255,255,0.45); font-size:0.85rem;">or</span>
+            <input type="text" id="new-album-input" placeholder="New session name, e.g. Youth Night" />
+          </div>
+        </div>
+
+        <div class="admin-card">
+          <h3>2. Add photos</h3>
+          <p class="admin-hint">Select multiple photos at once, or drag them into the box below. JPG, PNG or WEBP — large photos are automatically shrunk in your browser before upload, so there's no practical size limit on your end.</p>
+          <label class="dropzone" id="dropzone" for="file-input">
+            <span id="dropzone-text">Tap to choose photos, or drag &amp; drop here</span>
+            <input type="file" id="file-input" accept="image/*" multiple style="display:none;" />
+          </label>
+          <ul class="upload-list" id="upload-list"></ul>
+          <p class="admin-hint" id="overall-status" style="margin: 10px 0 0;"></p>
+          <div class="admin-row" style="margin-top:10px;">
+            <button class="btn btn-gold" id="upload-btn" type="button" disabled>Upload Photos</button>
+            <button class="btn btn-ghost-royal" id="cancel-all-btn" type="button" style="display:none;">Cancel All</button>
+          </div>
         </div>
       </div>
 
-      <div class="admin-card">
-        <h3>2. Add photos</h3>
-        <p class="admin-hint">Select multiple photos at once, or drag them into the box below. JPG, PNG or WEBP — large photos are automatically shrunk in your browser before upload, so there's no practical size limit on your end.</p>
-        <label class="dropzone" id="dropzone" for="file-input">
-          <span id="dropzone-text">Tap to choose photos, or drag &amp; drop here</span>
-          <input type="file" id="file-input" accept="image/*" multiple style="display:none;" />
-        </label>
-        <ul class="upload-list" id="upload-list"></ul>
-        <p class="admin-hint" id="overall-status" style="margin: 10px 0 0;"></p>
-        <div class="admin-row" style="margin-top:10px;">
-          <button class="btn btn-gold" id="upload-btn" type="button" disabled>Upload Photos</button>
-          <button class="btn btn-ghost-royal" id="cancel-all-btn" type="button" style="display:none;">Cancel All</button>
+      <div id="panel-manage" style="display:none;">
+        <div class="admin-card">
+          <h3>Manage session photos</h3>
+          <p class="admin-hint">Choose a session on the left to review or remove its photos.</p>
+          <div class="admin-row" style="margin-bottom:18px;">
+            <select id="manage-album-select"></select>
+          </div>
+          <div id="manage-grid" class="manage-grid"></div>
         </div>
       </div>
 
-      <div class="admin-card">
-        <h3>Manage existing photos</h3>
-        <p class="admin-hint">Choose an album above and its photos will list here for review or removal.</p>
-        <div id="manage-grid" class="manage-grid"></div>
-      </div>
-
     </div>
+  </main>
+</div>
 
-  </div>
-</section>
-
-<footer class="site-footer">
-  <div class="footer-grid">
-    <div>
-      <div class="footer-brand">
-        <img src="/images/logo.png" alt="Christ Ascension Church crest" />
-        <strong>Christ Ascension Church</strong>
-      </div>
-      <p>Lifters Power Assembly · 1984 Foundation Constitution</p>
-    </div>
-    <div>
-      <h4>Explore</h4>
-      <p><a href="/">Home</a></p>
-      <p><a href="/gallery.html">Photo Archive</a></p>
-      <p><a href="/about.html">About</a></p>
-    </div>
-    <div>
-      <h4>This Site</h4>
-      <p>Admin upload is available to the convention media team only.</p>
-    </div>
-  </div>
-  <div class="footer-bottom">
-    <span>© <span id="year"></span> Christ Ascension Church — Lifters Power Assembly</span>
-    <span>EBENEZER 2026 Unity Convention Archive</span>
-  </div>
-</footer>
-
-<script src="/site.js"></script>
 <script src="/admin.js"></script>
-<script>document.getElementById('year').textContent = new Date().getFullYear();</script>
 </body>
 </html>
