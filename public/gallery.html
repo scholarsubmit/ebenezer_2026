@@ -56,11 +56,24 @@
 </section>
 
 <div class="lightbox" id="lightbox">
-  <button class="lightbox-close" id="lightbox-close" aria-label="Close">✕</button>
-  <button class="lightbox-nav lightbox-prev" id="lightbox-prev" aria-label="Previous photo">‹</button>
-  <img id="lightbox-img" src="" alt="" />
-  <button class="lightbox-nav lightbox-next" id="lightbox-next" aria-label="Next photo">›</button>
+  <div class="lightbox-topbar">
+    <span class="lightbox-counter" id="lightbox-counter"></span>
+    <button class="lightbox-close" id="lightbox-close" aria-label="Close">✕</button>
+  </div>
+
+  <div class="lightbox-stage">
+    <button class="lightbox-nav lightbox-prev" id="lightbox-prev" aria-label="Previous photo">‹</button>
+    <div class="lightbox-viewport" id="lightbox-viewport">
+      <div class="lightbox-track" id="lightbox-track"></div>
+    </div>
+    <button class="lightbox-nav lightbox-next" id="lightbox-next" aria-label="Next photo">›</button>
+  </div>
+
   <p class="lightbox-caption" id="lightbox-caption"></p>
+
+  <div class="lightbox-filmstrip-wrap">
+    <div class="lightbox-filmstrip" id="lightbox-filmstrip"></div>
+  </div>
 </div>
 
 <footer class="site-footer">
