@@ -19,8 +19,11 @@
   const storageValueEl = document.getElementById('storage-value');
   const storageSubEl = document.getElementById('storage-sub');
   const navLinks = document.querySelectorAll('.admin-nav-link[data-panel]');
-  const panelUpload = document.getElementById('panel-upload');
-  const panelManage = document.getElementById('panel-manage');
+  const panels = {
+    upload: document.getElementById('panel-upload'),
+    manage: document.getElementById('panel-manage'),
+    speakers: document.getElementById('panel-speakers'),
+  };
   const toastContainer = document.getElementById('toast-container');
   const confirmOverlay = document.getElementById('confirm-overlay');
   const confirmMessage = document.getElementById('confirm-message');
@@ -68,10 +71,11 @@
   // ---------------- sidebar panel switching ----------------
 
   function switchPanel(name) {
-    const isUpload = name === 'upload';
-    if (panelUpload) panelUpload.style.display = isUpload ? '' : 'none';
-    if (panelManage) panelManage.style.display = isUpload ? 'none' : '';
+    Object.entries(panels).forEach(([key, el]) => {
+      if (el) el.style.display = key === name ? '' : 'none';
+    });
     navLinks.forEach((btn) => btn.classList.toggle('active', btn.dataset.panel === name));
+    if (name === 'speakers') refreshSpeakers();
   }
   navLinks.forEach((btn) => btn.addEventListener('click', () => switchPanel(btn.dataset.panel)));
 
@@ -574,6 +578,144 @@
   function cancelAllUploads() {
     batchCancelled = true;
     queue.filter((q) => q.status === 'uploading' && q.xhr).forEach((q) => q.xhr.abort());
+  }
+
+  // ---------------- Speaker management ----------------
+
+  const speakerNameInput = document.getElementById('speaker-name-input');
+  const speakerTitleInput = document.getElementById('speaker-title-input');
+  const speakerTagInput = document.getElementById('speaker-tag-input');
+  const speakerDropzone = document.getElementById('speaker-dropzone');
+  const speakerDropzoneText = document.getElementById('speaker-dropzone-text');
+  const speakerFileInput = document.getElementById('speaker-file-input');
+  const speakerPreviewWrap = document.getElementById('speaker-preview-wrap');
+  const speakerPreviewImg = document.getElementById('speaker-preview-img');
+  const speakerSaveBtn = document.getElementById('speaker-save-btn');
+  const speakersManageGrid = document.getElementById('speakers-manage-grid');
+
+  let speakerFile = null;
+
+  function updateSpeakerSaveState() {
+    if (speakerSaveBtn) speakerSaveBtn.disabled = !(speakerNameInput.value.trim() && speakerFile);
+  }
+
+  function setSpeakerFile(file) {
+    if (!file || !file.type.startsWith('image/')) return;
+    speakerFile = file;
+    speakerPreviewImg.src = URL.createObjectURL(file);
+    speakerPreviewWrap.style.display = 'block';
+    speakerDropzoneText.textContent = file.name;
+    updateSpeakerSaveState();
+  }
+
+  if (speakerFileInput) {
+    speakerFileInput.addEventListener('change', (e) => setSpeakerFile(e.target.files[0]));
+  }
+  if (speakerDropzone) {
+    ['dragenter', 'dragover'].forEach((evt) =>
+      speakerDropzone.addEventListener(evt, (e) => { e.preventDefault(); speakerDropzone.classList.add('dragover'); })
+    );
+    ['dragleave', 'drop'].forEach((evt) =>
+      speakerDropzone.addEventListener(evt, (e) => { e.preventDefault(); speakerDropzone.classList.remove('dragover'); })
+    );
+    speakerDropzone.addEventListener('drop', (e) => {
+      if (e.dataTransfer.files.length) setSpeakerFile(e.dataTransfer.files[0]);
+    });
+  }
+  if (speakerNameInput) speakerNameInput.addEventListener('input', updateSpeakerSaveState);
+
+  async function fetchSpeakers() {
+    try {
+      const res = await fetch('/api/speakers', { cache: 'no-store' });
+      const data = await res.json();
+      return data.speakers || [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  async function refreshSpeakers() {
+    const speakers = await fetchSpeakers();
+    speakersManageGrid.innerHTML = '';
+    if (speakers.length === 0) {
+      speakersManageGrid.innerHTML = '<p class="admin-hint">No speakers added yet.</p>';
+      return;
+    }
+    speakers.forEach((s) => {
+      const cell = document.createElement('div');
+      cell.className = 'manage-cell';
+      cell.innerHTML = `
+        <img src="${s.photoUrl}" alt="${s.name}" loading="lazy" />
+        <button type="button" class="manage-delete" title="Delete speaker">Delete</button>
+      `;
+      cell.querySelector('.manage-delete').addEventListener('click', () => deleteSpeaker(s.id, s.name, cell));
+      speakersManageGrid.appendChild(cell);
+    });
+  }
+
+  async function deleteSpeaker(id, name, cellEl) {
+    const ok = await showConfirm(`Remove ${name} from the speakers list? This cannot be undone.`);
+    if (!ok) return;
+    cellEl.style.opacity = '0.4';
+    try {
+      const res = await fetch('/api/speakers-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-password': password },
+        body: JSON.stringify({ id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Delete failed');
+      cellEl.remove();
+      showToast(`${name} removed.`, 'success');
+    } catch (err) {
+      showToast(err.message || 'Could not delete this speaker.', 'error');
+      cellEl.style.opacity = '1';
+    }
+  }
+
+  if (speakerSaveBtn) {
+    speakerSaveBtn.addEventListener('click', async () => {
+      const name = speakerNameInput.value.trim();
+      if (!name || !speakerFile) return;
+
+      speakerSaveBtn.disabled = true;
+      speakerSaveBtn.textContent = 'Saving…';
+
+      try {
+        const prepared = await prepareForUpload(speakerFile);
+        const dataBase64 = await blobToBase64(prepared.blob);
+        const contentType = prepared.renamedJpeg ? 'image/jpeg' : (speakerFile.type || 'image/jpeg');
+
+        const res = await fetch('/api/speakers-save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-admin-password': password },
+          body: JSON.stringify({
+            name,
+            title: speakerTitleInput.value.trim(),
+            tag: speakerTagInput.value.trim(),
+            contentType,
+            dataBase64,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Could not save speaker');
+
+        showToast(`${name} added.`, 'success');
+        speakerNameInput.value = '';
+        speakerTitleInput.value = '';
+        speakerTagInput.value = '';
+        speakerFile = null;
+        speakerPreviewWrap.style.display = 'none';
+        speakerDropzoneText.textContent = 'Tap to choose a photo, or drag & drop here';
+        speakerFileInput.value = '';
+        await refreshSpeakers();
+      } catch (err) {
+        showToast(err.message || 'Could not save speaker.', 'error');
+      } finally {
+        speakerSaveBtn.textContent = 'Add Speaker';
+        updateSpeakerSaveState();
+      }
+    });
   }
 
   unlockBtn.addEventListener('click', unlock);

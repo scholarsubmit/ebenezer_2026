@@ -1,18 +1,28 @@
 # EBENEZER 2026 — Christ Ascension Church Unity Convention Archive
 
-A free website for Christ Ascension Church (Lifters Power Assembly) to share
-every photo from the EBENEZER 2026 Unity Convention with members who
-couldn't attend in person.
+A free, professional-grade website for Christ Ascension Church (Lifters
+Power Assembly) to share every photo and speaker from the EBENEZER 2026
+Unity Convention with members who couldn't attend in person.
 
-- **Home page** — convention theme, verse, schedule, a preview of recent photos
-- **Gallery page** — every photo, grouped into albums, with a full-screen viewer
+- **Home page** — convention banner, live stats (real photo/session/speaker
+  counts), schedule, a preview of recent photos
+- **Gallery page** — every photo, grouped into sessions, **paginated at 30
+  photos per page**, with search, sort, grid/list view, and a full-screen
+  carousel viewer with Download + Save to Favorites
+- **Speakers page** — every speaker who has ministered at the convention,
+  each with a photo, title, and tag, browsable in the same carousel viewer
+- **Favorites** — visitors can heart any photo or speaker; saved locally on
+  their own device (no account needed) and browsable as their own
+  "Your Favorites" session on the Gallery page
 - **About page** — the church's story and the meaning behind "Ebenezer"
-- **Admin page** (`/admin.html`) — a password-protected page where the
-  convention media team uploads photos **directly from a phone or laptop
-  browser** — no GitHub, no command line, no coding, ever.
+- **Admin page** (`/admin.html`) — a password-protected dashboard where the
+  convention media team uploads photos and manages speakers **directly from
+  a phone or laptop browser** — no GitHub, no command line, no coding, ever.
+  Includes a real-time storage usage widget.
 
-Photos are stored in **Vercel Blob** (free storage tier, no separate account
-needed — it's built into Vercel).
+Photos, speaker records, and speaker photos are all stored in **Vercel
+Blob** (free storage tier, no separate account needed — it's built into
+Vercel).
 
 ---
 
@@ -112,11 +122,37 @@ All page text lives directly in plain HTML files:
 - `public/index.html` — home page copy, schedule
 - `public/about.html` — church history, convention description
 - `public/gallery.html` — gallery page header text
+- `public/speakers.html` — speakers page header text
 
 Open any of these in GitHub's built-in editor (pencil icon), make your
 change, and commit — Vercel redeploys automatically. This is the one part
 of the site that still goes through GitHub, since it's website design/copy
 rather than day-to-day photo uploads.
+
+---
+
+## Managing speakers
+
+From the admin dashboard, click **Manage Speakers** in the sidebar:
+
+1. Enter the speaker's name (required), title/ministry, and a tag (e.g.
+   "Guest Minister", "Convener", "Elder")
+2. Add a photo — same automatic compression as photo uploads
+3. Click **Add Speaker**
+
+They appear on the public `/speakers.html` page immediately. To remove a
+speaker, find them in the "Current speakers" grid in the same panel and
+click Delete.
+
+---
+
+## Favorites (for visitors)
+
+Anyone browsing the Gallery or Speakers page can click the heart icon on
+any photo or speaker to save it — this is stored only in their own
+browser (`localStorage`), not on the server, so it's private to their
+device and requires no account. Saved photos appear under the
+**"♥ Your Favorites"** entry in the Gallery's session dropdown.
 
 ---
 
@@ -126,23 +162,32 @@ rather than day-to-day photo uploads.
 ebenezer2026/
 ├── public/
 │   ├── index.html          Home page
-│   ├── gallery.html        Photo archive page
+│   ├── gallery.html        Photo archive page (album cards + pagination)
+│   ├── speakers.html       Speakers page
 │   ├── about.html          About page
-│   ├── admin.html          Password-protected photo upload page
-│   ├── admin.js            Upload page logic
-│   ├── styles.css          All site styling
+│   ├── admin.html          Password-protected media team dashboard
+│   ├── admin.js            Upload / manage photos / manage speakers logic
+│   ├── styles.css          All site styling (single unified theme)
 │   ├── site.js             Shared nav behavior
-│   ├── gallery.js          Gallery rendering + lightbox
-│   ├── home-preview.js     Home page photo preview
-│   └── images/logo.png     Church crest
+│   ├── gallery.js          Gallery rendering, pagination, carousel lightbox
+│   ├── speakers.js         Speakers rendering + carousel lightbox
+│   ├── favorites.js        Shared client-side favorites (localStorage)
+│   ├── home-preview.js     Home page stats + recent photos
+│   └── images/             Church crest, convention banner, speaker seed photos
 ├── api/
 │   ├── upload.js           Serverless function: receives + stores photos
 │   ├── gallery.js          Serverless function: lists all stored photos
-│   └── delete.js           Serverless function: removes a photo
+│   ├── delete.js           Serverless function: removes a photo
+│   ├── speakers.js         Serverless function: lists all speakers
+│   ├── speakers-save.js    Serverless function: adds a speaker
+│   ├── speakers-delete.js  Serverless function: removes a speaker
+│   └── health.js           Diagnostic endpoint — visit /api/health to check config
+├── lib/
+│   └── speakers-store.js   Shared read/write helper for the speakers JSON index
 ├── package.json             Declares the @vercel/blob dependency
 ├── vercel.json              Vercel configuration
 └── README.md                 This file
 ```
 
 No database to manage, no paid plan required, and no ongoing maintenance
-beyond uploading and (occasionally) deleting photos through the admin page.
+beyond uploading photos and managing speakers through the admin dashboard.

@@ -1,12 +1,13 @@
-// Gallery page: shows albums as cover cards, and paginates each album's
-// photos at 30 per page. The lightbox carousel browses every photo in the
-// current filtered/sorted set regardless of which page the grid is on.
+// Gallery page: shows sessions as cover cards, paginates each session's
+// photos at 30 per page, supports a virtual "Favorites" session, a
+// grid/list view toggle, and a carousel lightbox with Download + Favorite.
 
 (async function () {
   const albumsGrid = document.getElementById("albums-grid");
   if (!albumsGrid) return;
 
   const PAGE_SIZE = 30;
+  const FAV = window.CAC_FAV;
 
   const albumFilter = document.getElementById("album-filter");
   const sortSelect = document.getElementById("sort-select");
@@ -18,6 +19,8 @@
   const photoGridWrap = document.getElementById("photo-grid-wrap");
   const pagedGrid = document.getElementById("paged-photo-grid");
   const paginationEl = document.getElementById("pagination");
+  const viewGridBtn = document.getElementById("view-grid");
+  const viewListBtn = document.getElementById("view-list");
 
   let data;
   try {
@@ -28,6 +31,7 @@
   }
 
   const albums = (data.albums || []).filter((a) => a.photos && a.photos.length);
+  const allPhotosFlat = albums.flatMap((a) => a.photos);
 
   // ---------------- state ----------------
   let viewMode = "albums"; // "albums" | "detail"
@@ -35,6 +39,7 @@
   let currentPage = 1;
   let sortOrder = "newest";
   let searchTerm = "";
+  let listView = false;
   let flatPhotos = []; // the photo set currently loaded into the lightbox carousel
 
   if (albums.length === 0) {
@@ -47,7 +52,6 @@
     return;
   }
 
-  // Populate the "jump to session" dropdown
   albums.forEach((a) => {
     const opt = document.createElement("option");
     opt.value = a.slug;
@@ -57,6 +61,12 @@
 
   function coverPhoto(album) {
     return album.photos[album.photos.length - 1] || album.photos[0];
+  }
+
+  function favoritesAlbum() {
+    const favIds = FAV.getAll();
+    const photos = allPhotosFlat.filter((p) => favIds.includes(p.pathname));
+    return { slug: "__favorites__", title: "Your Favorites", count: photos.length, photos };
   }
 
   // ---------------- Albums (cover cards) view ----------------
@@ -98,14 +108,14 @@
     const term = searchTerm.trim().toLowerCase();
     let list = term ? album.photos.filter((p) => p.alt.toLowerCase().includes(term)) : album.photos.slice();
     list.sort((a, b) => {
-      const diff = new Date(a.uploadedAt) - new Date(b.uploadedAt);
+      const diff = new Date(a.uploadedAt || 0) - new Date(b.uploadedAt || 0);
       return sortOrder === "newest" ? -diff : diff;
     });
     return list;
   }
 
   function openAlbum(slug) {
-    const album = albums.find((a) => a.slug === slug);
+    const album = slug === "__favorites__" ? favoritesAlbum() : albums.find((a) => a.slug === slug);
     if (!album) return;
     activeAlbum = album;
     viewMode = "detail";
@@ -129,32 +139,50 @@
 
   function renderAlbumDetail() {
     if (!activeAlbum) return;
-    const filtered = getFilteredSortedPhotos(activeAlbum);
-    flatPhotos = filtered; // lightbox carousel spans the full filtered/sorted album, not just this page
+    // Favorites is dynamic (user can un-favorite mid-view), so recompute each render
+    const album = activeAlbum.slug === "__favorites__" ? favoritesAlbum() : activeAlbum;
+    activeAlbum = album;
 
-    detailTitle.textContent = activeAlbum.title;
+    const filtered = getFilteredSortedPhotos(album);
+    flatPhotos = filtered;
+
+    detailTitle.textContent = album.title;
     detailCount.textContent = `${filtered.length} photo${filtered.length === 1 ? "" : "s"}`;
 
-    const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-    if (currentPage > totalPages) currentPage = totalPages;
-
     if (filtered.length === 0) {
-      pagedGrid.innerHTML = `<div class="empty-state"><h3>No photos match "${searchTerm}" in this session</h3></div>`;
+      const msg = album.slug === "__favorites__"
+        ? "No favorites yet — tap the heart icon on any photo to save it here."
+        : `No photos match "${searchTerm}" in this session`;
+      pagedGrid.innerHTML = `<div class="empty-state"><h3>${msg}</h3></div>`;
       paginationEl.innerHTML = "";
       return;
     }
+
+    const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+    if (currentPage > totalPages) currentPage = totalPages;
 
     const start = (currentPage - 1) * PAGE_SIZE;
     const pagePhotos = filtered.slice(start, start + PAGE_SIZE);
 
     pagedGrid.innerHTML = "";
+    pagedGrid.classList.toggle("list", listView);
     pagePhotos.forEach((photo, localIdx) => {
       const globalIdx = start + localIdx;
       const btn = document.createElement("button");
       btn.type = "button";
+      btn.style.position = "relative";
       btn.setAttribute("aria-label", `Open photo: ${photo.alt}`);
-      btn.innerHTML = `<img src="${photo.src}" alt="${photo.alt}" loading="lazy" />`;
+      btn.innerHTML = `
+        <img src="${photo.src}" alt="${photo.alt}" loading="lazy" />
+        <span class="fav ${FAV.isFav(photo.pathname) ? "active" : ""}" data-pathname="${photo.pathname}">${FAV.heartIcon()}</span>
+      `;
       btn.addEventListener("click", () => openLightbox(globalIdx));
+      const favEl = btn.querySelector(".fav");
+      favEl.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const active = FAV.toggle(photo.pathname);
+        favEl.classList.toggle("active", active);
+      });
       pagedGrid.appendChild(btn);
     });
 
@@ -211,10 +239,7 @@
 
   sortSelect.addEventListener("change", () => {
     sortOrder = sortSelect.value;
-    if (viewMode === "detail") {
-      currentPage = 1;
-      renderAlbumDetail();
-    }
+    if (viewMode === "detail") { currentPage = 1; renderAlbumDetail(); }
   });
 
   let searchDebounce;
@@ -222,16 +247,27 @@
     clearTimeout(searchDebounce);
     searchDebounce = setTimeout(() => {
       searchTerm = searchInput.value;
-      if (viewMode === "detail") {
-        currentPage = 1;
-        renderAlbumDetail();
-      } else {
-        renderAlbumsView();
-      }
+      if (viewMode === "detail") { currentPage = 1; renderAlbumDetail(); }
+      else renderAlbumsView();
     }, 150);
   });
 
   backBtn.addEventListener("click", backToAlbums);
+
+  viewGridBtn.addEventListener("click", () => {
+    listView = false;
+    viewGridBtn.classList.add("active");
+    viewListBtn.classList.remove("active");
+    albumsGrid.classList.remove("list");
+    if (viewMode === "detail") renderAlbumDetail(); else renderAlbumsView();
+  });
+  viewListBtn.addEventListener("click", () => {
+    listView = true;
+    viewListBtn.classList.add("active");
+    viewGridBtn.classList.remove("active");
+    albumsGrid.classList.add("list");
+    if (viewMode === "detail") renderAlbumDetail(); else renderAlbumsView();
+  });
 
   renderAlbumsView();
 
@@ -242,13 +278,14 @@
   const filmstrip = document.getElementById("lightbox-filmstrip");
   const lbCaption = document.getElementById("lightbox-caption");
   const lbCounter = document.getElementById("lightbox-counter");
+  const lbDownload = document.getElementById("lightbox-download");
+  const lbFav = document.getElementById("lightbox-fav");
 
   let current = 0;
 
   function buildTrack() {
     track.innerHTML = "";
     filmstrip.innerHTML = "";
-
     flatPhotos.forEach((photo, i) => {
       const slide = document.createElement("div");
       slide.className = "lightbox-slide";
@@ -258,7 +295,6 @@
       const thumb = document.createElement("button");
       thumb.type = "button";
       thumb.className = "filmstrip-thumb";
-      thumb.dataset.idx = i;
       thumb.setAttribute("aria-label", `Go to photo ${i + 1}`);
       thumb.innerHTML = `<img src="${photo.src}" alt="" loading="lazy" />`;
       thumb.addEventListener("click", () => goTo(i));
@@ -269,53 +305,61 @@
   function updateTrackPosition(smooth = true) {
     track.style.transition = smooth ? "" : "none";
     track.style.transform = `translateX(-${current * 100}%)`;
-    if (!smooth) {
-      void track.offsetHeight;
-      track.style.transition = "";
-    }
+    if (!smooth) { void track.offsetHeight; track.style.transition = ""; }
   }
 
   function updateActiveStates() {
-    track.querySelectorAll(".lightbox-slide").forEach((slide, i) => {
-      slide.classList.toggle("is-active", i === current);
-    });
+    track.querySelectorAll(".lightbox-slide").forEach((slide, i) => slide.classList.toggle("is-active", i === current));
     filmstrip.querySelectorAll(".filmstrip-thumb").forEach((thumb, i) => {
       const active = i === current;
       thumb.classList.toggle("active", active);
       if (active) thumb.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
     });
     const photo = flatPhotos[current];
-    if (photo) lbCaption.textContent = photo.alt;
-    if (lbCounter) lbCounter.textContent = `${current + 1} / ${flatPhotos.length}`;
+    if (!photo) return;
+    lbCaption.textContent = photo.alt;
+    lbCounter.textContent = `${current + 1} / ${flatPhotos.length}`;
+    lbDownload.href = photo.src;
+    lbDownload.setAttribute("download", (photo.alt || "photo").replace(/\s+/g, "-").toLowerCase() + ".jpg");
+    const setFavState = () => {
+      const active2 = FAV.isFav(photo.pathname);
+      lbFav.classList.toggle("btn-gold", active2);
+      lbFav.classList.toggle("btn-ghost", !active2);
+      lbFav.textContent = active2 ? "Saved to Favorites" : "Save to Favorites";
+    };
+    setFavState();
+    lbFav.onclick = () => {
+      FAV.toggle(photo.pathname);
+      setFavState();
+      const gridFav = pagedGrid.querySelector(`.fav[data-pathname="${photo.pathname}"]`);
+      if (gridFav) gridFav.classList.toggle("active", FAV.isFav(photo.pathname));
+    };
   }
 
   function openLightbox(idx) {
     current = idx;
-    buildTrack(); // rebuilt each open since flatPhotos changes with album/search/sort
+    buildTrack();
     updateTrackPosition(false);
     updateActiveStates();
     lb.classList.add("open");
     document.body.style.overflow = "hidden";
   }
-
   function closeLightbox() {
     lb.classList.remove("open");
     document.body.style.overflow = "";
-  }
-
-  function goTo(idx) {
-    current = (idx + flatPhotos.length) % flatPhotos.length;
-    // If navigating past the current grid page's boundary, keep the grid's
-    // page in sync so re-opening from the grid stays consistent.
-    const newPage = Math.floor(current / PAGE_SIZE) + 1;
-    if (viewMode === "detail" && newPage !== currentPage) {
-      currentPage = newPage;
+    // Favoriting inside the lightbox can change the underlying (dynamic)
+    // Favorites album, so refresh the grid/pagination on close.
+    if (viewMode === "detail" && activeAlbum && activeAlbum.slug === "__favorites__") {
       renderAlbumDetail();
     }
+  }
+  function goTo(idx) {
+    current = (idx + flatPhotos.length) % flatPhotos.length;
+    const newPage = Math.floor(current / PAGE_SIZE) + 1;
+    if (viewMode === "detail" && newPage !== currentPage) { currentPage = newPage; renderAlbumDetail(); }
     updateTrackPosition(true);
     updateActiveStates();
   }
-
   function next() { goTo(current + 1); }
   function prev() { goTo(current - 1); }
 
