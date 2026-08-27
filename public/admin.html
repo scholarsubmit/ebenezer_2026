@@ -42,6 +42,7 @@
       <button type="button" class="admin-nav-link" data-panel="manage">🗂 Manage Photos</button>
       <button type="button" class="admin-nav-link" data-panel="submissions">🔔 Review Submissions<span id="submissions-badge" class="nav-badge" style="display:none;"></span></button>
       <button type="button" class="admin-nav-link" data-panel="speakers">🎤 Manage Speakers</button>
+      <button type="button" class="admin-nav-link" data-panel="backup">💾 Backup &amp; Export</button>
       <a class="admin-nav-link" href="/gallery.html" target="_blank" rel="noopener">🖼 View Public Gallery ↗</a>
     </nav>
 
@@ -164,10 +165,30 @@
         </div>
       </div>
 
+      <div id="panel-backup" style="display:none;">
+        <div class="admin-card">
+          <h3>Download a full backup</h3>
+          <p class="admin-hint">
+            Every photo and speaker on this site lives only in this project's storage — there is no
+            separate backup. If you ever want a copy on your own computer (recommended every so often,
+            and especially before making big changes), this downloads everything as one .zip file:
+            every session's photos, every speaker's photo, and a manifest.json listing all the details
+            (titles, bios, upload dates). Large archives may take a few minutes — keep this tab open
+            until it finishes.
+          </p>
+          <button class="btn btn-gold" id="backup-btn" type="button">Download Full Backup (.zip)</button>
+          <div class="upload-bar-track" id="backup-bar-track" style="margin-top:16px; display:none;">
+            <div class="upload-bar-fill" id="backup-bar-fill"></div>
+          </div>
+          <p class="admin-hint" id="backup-status" style="margin:10px 0 0;"></p>
+        </div>
+      </div>
+
     </div>
   </main>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <script src="/img-compress.js"></script>
 <script src="/admin.js"></script>
 </body>

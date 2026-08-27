@@ -131,6 +131,30 @@ rather than day-to-day photo uploads.
 
 ---
 
+## Backup & export
+
+**This matters — please read.** Everything on this site (every photo,
+every speaker) lives only in this project's Vercel Blob storage. There is
+no separate backup anywhere. If the Blob store were ever accidentally
+disconnected or deleted, or the Vercel project removed, everything would
+be gone permanently with nothing to restore from.
+
+In the admin sidebar, **Backup & Export** downloads a single `.zip` file
+containing:
+- Every photo, organized into folders by session
+- Every speaker's photo
+- A `manifest.json` listing all titles, bios, upload dates, and session
+  links
+
+This runs entirely in the browser (no server storage or time limits
+involved), so it works for archives of any size — it just takes longer
+for bigger ones. **Do this periodically**, and definitely before making
+any big changes, and keep the downloaded zip somewhere safe (a shared
+drive, an external drive, wherever your team already keeps important
+files).
+
+---
+
 ## Homepage highlights
 
 In **Manage Photos**, click the ★ star on any photo to pin it as a

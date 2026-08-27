@@ -27,6 +27,7 @@
     manage: document.getElementById('panel-manage'),
     submissions: document.getElementById('panel-submissions'),
     speakers: document.getElementById('panel-speakers'),
+    backup: document.getElementById('panel-backup'),
   };
   const submissionsGrid = document.getElementById('submissions-grid');
   const submissionsBadge = document.getElementById('submissions-badge');
@@ -899,6 +900,144 @@
   albumSelect.addEventListener('change', () => { newAlbumInput.value = ''; });
   newAlbumInput.addEventListener('input', () => { if (newAlbumInput.value) albumSelect.value = ''; });
   if (manageAlbumSelect) manageAlbumSelect.addEventListener('change', renderManageGrid);
+
+  // ---------------- Backup & Export ----------------
+
+  const backupBtn = document.getElementById('backup-btn');
+  const backupBarTrack = document.getElementById('backup-bar-track');
+  const backupBarFill = document.getElementById('backup-bar-fill');
+  const backupStatus = document.getElementById('backup-status');
+
+  function sanitizeForZipPath(name) {
+    return String(name).replace(/[^a-zA-Z0-9._-]/g, '-');
+  }
+
+  async function fetchAsBlob(url) {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.blob();
+  }
+
+  if (backupBtn) {
+    backupBtn.addEventListener('click', async () => {
+      if (typeof JSZip === 'undefined') {
+        showToast('Could not load the zip library — check your internet connection and try again.', 'error');
+        return;
+      }
+
+      backupBtn.disabled = true;
+      backupBtn.textContent = 'Preparing…';
+      backupBarTrack.style.display = 'block';
+      backupBarFill.style.width = '0%';
+      backupBarFill.classList.remove('upload-bar-error');
+      backupStatus.textContent = 'Gathering the full list of photos and speakers…';
+
+      try {
+        const [galleryRes, speakersRes] = await Promise.all([
+          fetch('/api/gallery', { cache: 'no-store' }),
+          fetch('/api/speakers', { cache: 'no-store' }),
+        ]);
+        const galleryData = await galleryRes.json();
+        const speakersData = await speakersRes.json();
+        const albums = galleryData.albums || [];
+        const speakers = speakersData.speakers || [];
+
+        const zip = new JSZip();
+        const manifest = {
+          exportedAt: new Date().toISOString(),
+          site: 'EBENEZER 2026 — Christ Ascension Church',
+          albums: albums.map((a) => ({
+            title: a.title,
+            slug: a.slug,
+            photoCount: a.count,
+            photos: a.photos.map((p) => ({ file: `photos/${a.slug}/${sanitizeForZipPath(p.pathname.split('/').pop())}`, alt: p.alt, uploadedAt: p.uploadedAt })),
+          })),
+          speakers: speakers.map((s) => ({
+            name: s.name,
+            title: s.title,
+            tag: s.tag,
+            bio: s.bio,
+            sessionSlug: s.sessionSlug || null,
+            file: `speakers/${sanitizeForZipPath(s.name)}-${s.id}.jpg`,
+          })),
+        };
+
+        const totalFiles = albums.reduce((sum, a) => sum + a.photos.length, 0) + speakers.length;
+        let done = 0;
+        let skipped = 0;
+
+        const updateProgress = (label) => {
+          const pct = totalFiles === 0 ? 100 : Math.round((done / totalFiles) * 100);
+          backupBarFill.style.width = pct + '%';
+          backupStatus.textContent = `${label} (${done}/${totalFiles})`;
+        };
+
+        backupBtn.textContent = 'Downloading photos…';
+
+        for (const album of albums) {
+          for (const photo of album.photos) {
+            const filename = sanitizeForZipPath(photo.pathname.split('/').pop());
+            try {
+              const blob = await fetchAsBlob(photo.src);
+              zip.file(`photos/${album.slug}/${filename}`, blob);
+            } catch (e) {
+              skipped++;
+            }
+            done++;
+            updateProgress(`Downloading photos from "${album.title}"…`);
+          }
+        }
+
+        for (const s of speakers) {
+          const filename = `${sanitizeForZipPath(s.name)}-${s.id}.jpg`;
+          try {
+            const blob = await fetchAsBlob(s.photoUrl);
+            zip.file(`speakers/${filename}`, blob);
+          } catch (e) {
+            skipped++;
+          }
+          done++;
+          updateProgress('Downloading speaker photos…');
+        }
+
+        zip.file('manifest.json', JSON.stringify(manifest, null, 2));
+
+        backupBtn.textContent = 'Compressing zip…';
+        backupStatus.textContent = 'Building the final .zip file — this can take a moment for large archives…';
+
+        const zipBlob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } }, (metadata) => {
+          backupBarFill.style.width = Math.round(metadata.percent) + '%';
+        });
+
+        const dateStr = new Date().toISOString().slice(0, 10);
+        const dlUrl = URL.createObjectURL(zipBlob);
+        const a = document.createElement('a');
+        a.href = dlUrl;
+        a.download = `ebenezer-2026-backup-${dateStr}.zip`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(dlUrl), 10000);
+
+        backupBarFill.style.width = '100%';
+        if (skipped === 0) {
+          backupStatus.textContent = `Done — ${totalFiles} file(s) backed up successfully.`;
+          showToast('Backup downloaded successfully.', 'success');
+        } else {
+          backupStatus.textContent = `Done — ${totalFiles - skipped} of ${totalFiles} file(s) backed up. ${skipped} could not be downloaded (check your connection and try again if that seems high).`;
+          backupBarFill.classList.add('upload-bar-error');
+          showToast(`Backup downloaded with ${skipped} file(s) skipped.`, 'error');
+        }
+      } catch (err) {
+        backupStatus.textContent = '';
+        backupBarTrack.style.display = 'none';
+        showToast(err.message || 'Backup failed. Please try again.', 'error');
+      } finally {
+        backupBtn.disabled = false;
+        backupBtn.textContent = 'Download Full Backup (.zip)';
+      }
+    });
+  }
 
   if (password) {
     gate.style.display = 'none';
