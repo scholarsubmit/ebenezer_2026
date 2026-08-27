@@ -16,6 +16,9 @@
   const cancelAllBtn = document.getElementById('cancel-all-btn');
   const overallStatus = document.getElementById('overall-status');
   const manageGrid = document.getElementById('manage-grid');
+  const selectModeBtn = document.getElementById('select-mode-btn');
+  const bulkDeleteBtn = document.getElementById('bulk-delete-btn');
+  const bulkDeleteCount = document.getElementById('bulk-delete-count');
   const storageValueEl = document.getElementById('storage-value');
   const storageSubEl = document.getElementById('storage-sub');
   const navLinks = document.querySelectorAll('.admin-nav-link[data-panel]');
@@ -27,6 +30,8 @@
   };
   const submissionsGrid = document.getElementById('submissions-grid');
   const submissionsBadge = document.getElementById('submissions-badge');
+  const approveAllBtn = document.getElementById('approve-all-btn');
+  const rejectAllBtn = document.getElementById('reject-all-btn');
   const toastContainer = document.getElementById('toast-container');
   const confirmOverlay = document.getElementById('confirm-overlay');
   const confirmMessage = document.getElementById('confirm-message');
@@ -105,6 +110,9 @@
   let currentAlbums = [];
   let isUploading = false;
   let batchCancelled = false;
+  let featuredSet = new Set();
+  let selectMode = false;
+  let selectedPathnames = new Set();
 
   // Each queued file is tracked as an object, not a raw File, so we can
   // attach a thumbnail, an editable name, per-item status, and (while
@@ -126,9 +134,11 @@
   function populateAlbumSelect() {
     const prevValue = albumSelect.value;
     const prevManageValue = manageAlbumSelect ? manageAlbumSelect.value : '';
+    const prevSpeakerSession = speakerSessionSelect ? speakerSessionSelect.value : '';
 
     albumSelect.innerHTML = '<option value="">— Select existing session —</option>';
     if (manageAlbumSelect) manageAlbumSelect.innerHTML = '<option value="">— Select a session —</option>';
+    if (speakerSessionSelect) speakerSessionSelect.innerHTML = '<option value="">Not linked to a specific session (optional)</option>';
 
     currentAlbums.forEach((a) => {
       const label = `${a.title} (${a.count})`;
@@ -143,11 +153,20 @@
         opt2.textContent = label;
         manageAlbumSelect.appendChild(opt2);
       }
+      if (speakerSessionSelect) {
+        const opt3 = document.createElement('option');
+        opt3.value = a.slug;
+        opt3.textContent = a.title;
+        speakerSessionSelect.appendChild(opt3);
+      }
     });
 
     if (currentAlbums.some((a) => a.slug === prevValue)) albumSelect.value = prevValue;
     if (manageAlbumSelect && currentAlbums.some((a) => a.slug === prevManageValue)) {
       manageAlbumSelect.value = prevManageValue;
+    }
+    if (speakerSessionSelect && currentAlbums.some((a) => a.slug === prevSpeakerSession)) {
+      speakerSessionSelect.value = prevSpeakerSession;
     }
   }
 
@@ -155,6 +174,9 @@
     const chosenSlug = manageAlbumSelect ? manageAlbumSelect.value : '';
     const album = currentAlbums.find((a) => a.slug === chosenSlug);
     manageGrid.innerHTML = '';
+    selectedPathnames.clear();
+    updateBulkDeleteBar();
+
     if (!chosenSlug) {
       manageGrid.innerHTML = '<p class="admin-hint">Choose a session above to see its photos.</p>';
       return;
@@ -166,13 +188,97 @@
     album.photos.forEach((p) => {
       const cell = document.createElement('div');
       cell.className = 'manage-cell';
+      const isFeatured = featuredSet.has(p.pathname);
       cell.innerHTML = `
         <img src="${p.src}" alt="${p.alt}" loading="lazy" />
+        <input type="checkbox" class="manage-select-box" style="display:${selectMode ? 'block' : 'none'};" />
+        <button type="button" class="manage-star ${isFeatured ? 'active' : ''}" title="${isFeatured ? 'Remove from homepage highlights' : 'Feature on homepage'}">★</button>
         <button type="button" class="manage-delete" title="Delete photo">Delete</button>
       `;
       cell.querySelector('.manage-delete').addEventListener('click', () => deletePhoto(p.pathname, cell));
+      cell.querySelector('.manage-star').addEventListener('click', () => toggleFeatured(p.pathname, cell));
+      const checkbox = cell.querySelector('.manage-select-box');
+      checkbox.addEventListener('change', () => {
+        if (checkbox.checked) selectedPathnames.add(p.pathname);
+        else selectedPathnames.delete(p.pathname);
+        updateBulkDeleteBar();
+      });
       manageGrid.appendChild(cell);
     });
+  }
+
+  function updateBulkDeleteBar() {
+    if (!bulkDeleteBtn) return;
+    bulkDeleteBtn.style.display = selectMode ? 'inline-flex' : 'none';
+    bulkDeleteCount.textContent = String(selectedPathnames.size);
+    bulkDeleteBtn.disabled = selectedPathnames.size === 0;
+  }
+
+  if (selectModeBtn) {
+    selectModeBtn.addEventListener('click', () => {
+      selectMode = !selectMode;
+      selectModeBtn.textContent = selectMode ? 'Cancel Selecting' : 'Select Multiple';
+      renderManageGrid();
+    });
+  }
+
+  if (bulkDeleteBtn) {
+    bulkDeleteBtn.addEventListener('click', async () => {
+      const count = selectedPathnames.size;
+      if (count === 0) return;
+      const ok = await showConfirm(`Delete ${count} selected photo${count === 1 ? '' : 's'} permanently? This cannot be undone.`);
+      if (!ok) return;
+
+      bulkDeleteBtn.disabled = true;
+      bulkDeleteBtn.textContent = 'Deleting…';
+      const pathnames = Array.from(selectedPathnames);
+      let succeeded = 0;
+      for (const pathname of pathnames) {
+        try {
+          const res = await fetch('/api/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-admin-password': password },
+            body: JSON.stringify({ pathname }),
+          });
+          if (res.ok) succeeded++;
+        } catch (e) { /* continue with the rest */ }
+      }
+      showToast(`${succeeded} of ${count} photo(s) deleted.`, succeeded === count ? 'success' : 'error');
+      bulkDeleteBtn.textContent = 'Delete Selected (0)';
+      selectMode = false;
+      selectModeBtn.textContent = 'Select Multiple';
+      await refreshAlbums();
+    });
+  }
+
+  async function fetchFeatured() {
+    try {
+      const res = await fetch('/api/featured', { cache: 'no-store' });
+      const data = await res.json();
+      return new Set((data.photos || []).map((p) => p.pathname));
+    } catch (e) {
+      return new Set();
+    }
+  }
+
+  async function toggleFeatured(pathname, cellEl) {
+    const starBtn = cellEl.querySelector('.manage-star');
+    starBtn.disabled = true;
+    try {
+      const res = await fetch('/api/featured-toggle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-password': password },
+        body: JSON.stringify({ pathname }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not update highlight');
+      if (data.featured) { featuredSet.add(pathname); starBtn.classList.add('active'); showToast('Added to homepage highlights.', 'success'); }
+      else { featuredSet.delete(pathname); starBtn.classList.remove('active'); showToast('Removed from homepage highlights.', 'success'); }
+    } catch (err) {
+      showToast(err.message || 'Could not update highlight.', 'error');
+    } finally {
+      starBtn.disabled = false;
+    }
   }
 
   async function deletePhoto(pathname, cellEl) {
@@ -228,6 +334,7 @@
 
   async function refreshAlbums() {
     await fetchGallery();
+    featuredSet = await fetchFeatured();
     populateAlbumSelect();
     renderManageGrid();
     updateStorageWidget();
@@ -496,6 +603,7 @@
   const speakerTitleInput = document.getElementById('speaker-title-input');
   const speakerTagInput = document.getElementById('speaker-tag-input');
   const speakerBioInput = document.getElementById('speaker-bio-input');
+  const speakerSessionSelect = document.getElementById('speaker-session-select');
   const speakerDropzone = document.getElementById('speaker-dropzone');
   const speakerDropzoneText = document.getElementById('speaker-dropzone-text');
   const speakerFileInput = document.getElementById('speaker-file-input');
@@ -605,6 +713,7 @@
             title: speakerTitleInput.value.trim(),
             tag: speakerTagInput.value.trim(),
             bio: speakerBioInput.value.trim(),
+            sessionSlug: speakerSessionSelect ? speakerSessionSelect.value : '',
             contentType,
             dataBase64,
           }),
@@ -617,6 +726,7 @@
         speakerTitleInput.value = '';
         speakerTagInput.value = '';
         speakerBioInput.value = '';
+        if (speakerSessionSelect) speakerSessionSelect.value = '';
         speakerFile = null;
         speakerPreviewWrap.style.display = 'none';
         speakerDropzoneText.textContent = 'Tap to choose a photo, or drag & drop here';
@@ -657,9 +767,14 @@
     }
   }
 
+  let currentSubmissionIds = [];
+
   async function refreshSubmissions() {
     const submissions = await fetchSubmissions();
+    currentSubmissionIds = submissions.map((s) => s.id);
     updateSubmissionsBadge(submissions.length);
+    if (approveAllBtn) approveAllBtn.style.display = submissions.length > 0 ? '' : 'none';
+    if (rejectAllBtn) rejectAllBtn.style.display = submissions.length > 0 ? '' : 'none';
 
     if (!submissionsGrid) return;
     submissionsGrid.innerHTML = '';
@@ -717,6 +832,46 @@
       cardEl.style.opacity = '1';
     }
   }
+
+  // Bulk operations run sequentially (never in parallel) because approve/
+  // reject each do a read-modify-write on the same shared submissions
+  // index — running them concurrently could overwrite each other's changes.
+  async function bulkReview(action) {
+    const ids = currentSubmissionIds.slice();
+    if (ids.length === 0) return;
+    const verb = action === 'approve' ? 'approve' : 'reject and permanently discard';
+    const ok = await showConfirm(`${action === 'approve' ? 'Approve' : 'Reject'} all ${ids.length} pending photo(s)? This will ${verb} every one currently listed.`);
+    if (!ok) return;
+
+    const btn = action === 'approve' ? approveAllBtn : rejectAllBtn;
+    const otherBtn = action === 'approve' ? rejectAllBtn : approveAllBtn;
+    btn.disabled = true;
+    otherBtn.disabled = true;
+    btn.textContent = action === 'approve' ? 'Approving…' : 'Rejecting…';
+
+    const endpoint = action === 'approve' ? '/api/submissions-approve' : '/api/submissions-reject';
+    let succeeded = 0;
+    for (const id of ids) {
+      try {
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-admin-password': password },
+          body: JSON.stringify({ id }),
+        });
+        if (res.ok) succeeded++;
+      } catch (e) { /* continue with the rest */ }
+    }
+
+    showToast(`${succeeded} of ${ids.length} photo(s) ${action === 'approve' ? 'approved' : 'rejected'}.`, succeeded === ids.length ? 'success' : 'error');
+    btn.textContent = action === 'approve' ? 'Approve All' : 'Reject All';
+    btn.disabled = false;
+    otherBtn.disabled = false;
+    if (action === 'approve') await refreshAlbums();
+    await refreshSubmissions();
+  }
+
+  if (approveAllBtn) approveAllBtn.addEventListener('click', () => bulkReview('approve'));
+  if (rejectAllBtn) rejectAllBtn.addEventListener('click', () => bulkReview('reject'));
 
   unlockBtn.addEventListener('click', unlock);
   passwordInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') unlock(); });

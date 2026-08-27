@@ -23,12 +23,18 @@
   const viewListBtn = document.getElementById("view-list");
 
   let data;
+  let speakersData = { speakers: [] };
   try {
-    const res = await fetch("/api/gallery", { cache: "no-store" });
-    data = await res.json();
+    const [gRes, sRes] = await Promise.all([
+      fetch("/api/gallery", { cache: "no-store" }),
+      fetch("/api/speakers", { cache: "no-store" }),
+    ]);
+    data = await gRes.json();
+    speakersData = await sRes.json();
   } catch (e) {
     data = { albums: [] };
   }
+  const allSpeakers = speakersData.speakers || [];
 
   const albums = (data.albums || []).filter((a) => a.photos && a.photos.length);
   const allPhotosFlat = albums.flatMap((a) => a.photos);
@@ -61,6 +67,27 @@
 
   function coverPhoto(album) {
     return album.photos[album.photos.length - 1] || album.photos[0];
+  }
+
+  const speakersStrip = document.getElementById("session-speakers-strip");
+  function renderSessionSpeakers(albumSlug) {
+    if (!speakersStrip) return;
+    const matches = allSpeakers.filter((s) => s.sessionSlug === albumSlug);
+    if (matches.length === 0) {
+      speakersStrip.style.display = "none";
+      speakersStrip.innerHTML = "";
+      return;
+    }
+    speakersStrip.style.display = "flex";
+    speakersStrip.innerHTML = `
+      <span class="session-speakers-label">Speakers at this session:</span>
+      ${matches.map((s) => `
+        <a class="session-speaker-chip" href="/speakers.html">
+          <img src="${s.photoUrl}" alt="${s.name}" loading="lazy" />
+          <span>${s.name}</span>
+        </a>
+      `).join("")}
+    `;
   }
 
   function favoritesAlbum() {
@@ -148,6 +175,7 @@
 
     detailTitle.textContent = album.title;
     detailCount.textContent = `${filtered.length} photo${filtered.length === 1 ? "" : "s"}`;
+    renderSessionSpeakers(album.slug);
 
     if (filtered.length === 0) {
       const msg = album.slug === "__favorites__"
@@ -270,6 +298,12 @@
   });
 
   renderAlbumsView();
+
+  // Deep link support: /gallery.html?album=<slug> opens straight into that session
+  const deepLinkAlbum = new URLSearchParams(location.search).get("album");
+  if (deepLinkAlbum && albums.some((a) => a.slug === deepLinkAlbum)) {
+    openAlbum(deepLinkAlbum);
+  }
 
   // ---------------- Carousel Lightbox ----------------
   const lb = document.getElementById("lightbox");

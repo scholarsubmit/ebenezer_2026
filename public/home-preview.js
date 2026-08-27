@@ -11,14 +11,17 @@
 
   let galleryData = { albums: [] };
   let speakersData = { speakers: [] };
+  let featuredData = { photos: [] };
 
   try {
-    const [gRes, sRes] = await Promise.all([
+    const [gRes, sRes, fRes] = await Promise.all([
       fetch("/api/gallery", { cache: "no-store" }),
       fetch("/api/speakers", { cache: "no-store" }),
+      fetch("/api/featured", { cache: "no-store" }),
     ]);
     galleryData = await gRes.json();
     speakersData = await sRes.json();
+    featuredData = await fRes.json();
   } catch (e) {
     // leave defaults
   }
@@ -33,15 +36,19 @@
 
   if (!grid) return;
 
+  const isFeatured = featuredData.photos && featuredData.photos.length > 0;
+  const headingEl = document.getElementById("preview-heading");
+  if (headingEl && isFeatured) headingEl.textContent = "Highlights from EBENEZER 2026";
+
   if (photos.length === 0) {
     if (section) section.style.display = "none";
     return;
   }
 
-  const sample = photos
-    .slice()
-    .sort((a, b) => new Date(b.uploadedAt || 0) - new Date(a.uploadedAt || 0))
-    .slice(0, 10);
+  const sample = (featuredData.photos && featuredData.photos.length > 0
+    ? featuredData.photos
+    : photos.slice().sort((a, b) => new Date(b.uploadedAt || 0) - new Date(a.uploadedAt || 0))
+  ).slice(0, 10);
 
   grid.innerHTML = sample
     .map(

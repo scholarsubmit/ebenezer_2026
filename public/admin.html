@@ -102,9 +102,13 @@
       <div id="panel-manage" style="display:none;">
         <div class="admin-card">
           <h3>Manage session photos</h3>
-          <p class="admin-hint">Choose a session on the left to review or remove its photos.</p>
-          <div class="admin-row" style="margin-bottom:18px;">
+          <p class="admin-hint">Choose a session on the left to review or remove its photos. Click the star to feature a photo on the homepage.</p>
+          <div class="admin-row" style="margin-bottom:14px;">
             <select id="manage-album-select"></select>
+          </div>
+          <div class="admin-row" style="margin-bottom:18px;">
+            <button class="btn btn-royal" id="select-mode-btn" type="button">Select Multiple</button>
+            <button class="btn btn-ghost-royal" id="bulk-delete-btn" type="button" style="display:none;">Delete Selected (<span id="bulk-delete-count">0</span>)</button>
           </div>
           <div id="manage-grid" class="manage-grid"></div>
         </div>
@@ -114,6 +118,10 @@
         <div class="admin-card">
           <h3>Review submitted photos</h3>
           <p class="admin-hint">Photos submitted by visitors through the public "Submit a Photo" page land here first. Approve to add them to the gallery, or reject to discard them.</p>
+          <div class="admin-row" style="margin-bottom:18px;">
+            <button class="btn btn-royal" id="approve-all-btn" type="button">Approve All</button>
+            <button class="btn btn-ghost-royal" id="reject-all-btn" type="button">Reject All</button>
+          </div>
           <div id="submissions-grid" class="submissions-grid"></div>
         </div>
       </div>
@@ -128,6 +136,11 @@
           </div>
           <div class="admin-row" style="margin-bottom:16px;">
             <input type="text" id="speaker-tag-input" placeholder="Tag, e.g. Guest Minister, Convener, Elder" />
+          </div>
+          <div class="admin-row" style="margin-bottom:16px;">
+            <select id="speaker-session-select">
+              <option value="">Not linked to a specific session (optional)</option>
+            </select>
           </div>
           <div class="admin-row" style="margin-bottom:16px;">
             <textarea id="speaker-bio-input" placeholder="Short bio (optional) — a sentence or two on their ministry" rows="3" style="flex:1; min-width:100%; padding:12px 14px; border-radius:10px; border:1px solid var(--line); background:var(--bg-2); color:var(--text-hi); font-family:var(--font-body); font-size:0.92rem; resize:vertical;"></textarea>

@@ -33,6 +33,7 @@ module.exports = async function handler(req, res) {
   const title = String(body.title || '').trim();
   const tag = String(body.tag || '').trim() || 'Guest Minister';
   const bio = String(body.bio || '').trim();
+  const sessionSlug = String(body.sessionSlug || '').trim();
   const { contentType, dataBase64 } = body;
 
   if (!name) return res.status(400).json({ error: 'Speaker name is required.' });
@@ -64,6 +65,7 @@ module.exports = async function handler(req, res) {
       title,
       tag,
       bio,
+      sessionSlug,
       photoUrl: blob.url,
       photoPathname: blob.pathname,
     };

@@ -131,6 +131,50 @@ rather than day-to-day photo uploads.
 
 ---
 
+## Homepage highlights
+
+In **Manage Photos**, click the ★ star on any photo to pin it as a
+homepage highlight. The home page shows starred photos instead of "most
+recent" whenever at least one is starred, and the section heading changes
+to "Highlights from EBENEZER 2026" automatically. Click the star again to
+unpin it.
+
+---
+
+## Bulk actions
+
+- **Manage Photos** → click **Select Multiple** to reveal checkboxes on
+  every photo, tick the ones you want gone, then **Delete Selected**.
+- **Review Submissions** → **Approve All** / **Reject All** process every
+  currently-listed pending photo in one click (each one still runs
+  one-at-a-time behind the scenes, to keep the data safe — see note in
+  the code if you're curious why).
+
+---
+
+## Linking speakers to sessions
+
+When adding a speaker, you can optionally pick which session they
+ministered at. Once linked:
+- Their card and lightbox on `/speakers.html` show a **"View photos from
+  [session] →"** link straight into that session's gallery.
+- That session's gallery page shows a **"Speakers at this session"** strip
+  linking back to them.
+
+This is optional per speaker — leave it unset if a speaker isn't tied to
+one specific session.
+
+---
+
+## SEO & search engines
+
+`robots.txt` and `sitemap.xml` are included so search engines can find
+and index the site. Both reference `https://ebenezer2026.vercel.app` — if
+your domain changes, update `public/robots.txt` and `public/sitemap.xml`
+to match, the same way described above for the social-sharing tags.
+
+---
+
 ## Public photo submissions
 
 Anyone can share a photo without a password at `/submit.html` — linked from
@@ -213,8 +257,10 @@ ebenezer2026/
 │   ├── favorites.js        Shared client-side favorites (localStorage)
 │   ├── share.js            Shared "Share" (native share sheet / WhatsApp)
 │   ├── img-compress.js     Shared client-side photo compression
-│   ├── home-preview.js     Home page stats + recent photos
+│   ├── home-preview.js     Home page stats + recent/highlight photos
 │   ├── manifest.json       PWA manifest ("Add to Home Screen")
+│   ├── robots.txt          Search engine crawl rules
+│   ├── sitemap.xml         Search engine page list
 │   └── images/             Crest, convention banner, speaker photos, app icons
 ├── api/
 │   ├── upload.js                Serverless function: receives + stores photos
@@ -227,9 +273,12 @@ ebenezer2026/
 │   ├── submissions.js            Admin: lists pending submissions
 │   ├── submissions-approve.js    Admin: moves a submission into the gallery
 │   ├── submissions-reject.js     Admin: discards a submission
+│   ├── featured.js               Public: lists homepage-highlight photos
+│   ├── featured-toggle.js        Admin: pins/unpins a photo as a highlight
 │   └── health.js                 Diagnostic endpoint — visit /api/health to check config
 ├── lib/
 │   ├── speakers-store.js     Shared read/write helper for the speakers JSON index
+│   ├── featured-store.js     Shared read/write helper for the highlights JSON index
 │   └── submissions-store.js  Shared read/write helper for the pending-submissions index
 ├── package.json             Declares the @vercel/blob dependency
 ├── vercel.json              Vercel configuration

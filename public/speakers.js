@@ -12,10 +12,16 @@
   const FAV = window.CAC_FAV;
 
   let speakers = [];
+  let albumTitleBySlug = {};
   try {
-    const res = await fetch("/api/speakers", { cache: "no-store" });
-    const data = await res.json();
-    speakers = data.speakers || [];
+    const [sRes, gRes] = await Promise.all([
+      fetch("/api/speakers", { cache: "no-store" }),
+      fetch("/api/gallery", { cache: "no-store" }),
+    ]);
+    const sData = await sRes.json();
+    const gData = await gRes.json();
+    speakers = sData.speakers || [];
+    (gData.albums || []).forEach((a) => { albumTitleBySlug[a.slug] = a.title; });
   } catch (e) {
     speakers = [];
   }
@@ -37,6 +43,7 @@
 
     grid.innerHTML = "";
     list.forEach((s, idx) => {
+      const sessionTitle = s.sessionSlug ? albumTitleBySlug[s.sessionSlug] : null;
       const card = document.createElement("article");
       card.className = "card speaker-card";
       card.innerHTML = `
@@ -48,6 +55,7 @@
         <div class="cap">
           <p class="t">${s.name}</p>
           <p class="s">${s.title || ""}</p>
+          ${sessionTitle ? `<a class="speaker-session-link" href="/gallery.html?album=${encodeURIComponent(s.sessionSlug)}">View photos from ${sessionTitle} →</a>` : ""}
         </div>
       `;
       card.querySelector(".thumb").addEventListener("click", () => openLightbox(idx));
@@ -82,6 +90,7 @@
   const filmstrip = document.getElementById("lightbox-filmstrip");
   const lbCaption = document.getElementById("lightbox-caption");
   const lbBio = document.getElementById("lightbox-bio");
+  const lbSessionLink = document.getElementById("lightbox-session-link");
   const lbCounter = document.getElementById("lightbox-counter");
   const lbDownload = document.getElementById("lightbox-download");
   const lbFav = document.getElementById("lightbox-fav");
@@ -125,6 +134,16 @@
     if (!s) return;
     lbCaption.textContent = [s.name, s.title].filter(Boolean).join(" — ");
     if (lbBio) lbBio.textContent = s.bio || "";
+    if (lbSessionLink) {
+      const sessionTitle = s.sessionSlug ? albumTitleBySlug[s.sessionSlug] : null;
+      if (sessionTitle) {
+        lbSessionLink.style.display = "inline-block";
+        lbSessionLink.href = `/gallery.html?album=${encodeURIComponent(s.sessionSlug)}`;
+        lbSessionLink.textContent = `View photos from ${sessionTitle} →`;
+      } else {
+        lbSessionLink.style.display = "none";
+      }
+    }
     lbCounter.textContent = `${current + 1} / ${currentList.length}`;
     lbDownload.href = s.photoUrl;
     lbDownload.setAttribute("download", `${s.name.replace(/\s+/g, "-").toLowerCase()}.jpg`);
