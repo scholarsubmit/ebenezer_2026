@@ -68,6 +68,9 @@
       <div class="admin-row">
         <input type="text" id="submitter-name-input" placeholder="Your name" />
       </div>
+      <div class="admin-row" style="margin-top:10px;">
+        <input type="text" id="submit-password-input" placeholder="Access code (only if one was provided to you)" />
+      </div>
       <!-- Honeypot — hidden from real visitors, filters simple bots -->
       <div style="position:absolute; left:-9999px; opacity:0; height:0; overflow:hidden;" aria-hidden="true">
         <label>Leave this field empty<input type="text" id="website-input" name="website" tabindex="-1" autocomplete="off" /></label>
@@ -134,5 +137,6 @@
 <script src="/img-compress.js"></script>
 <script src="/submit.js"></script>
 <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+<script defer src="/_vercel/insights/script.js"></script>
 </body>
 </html>

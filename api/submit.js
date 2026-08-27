@@ -1,8 +1,12 @@
 // api/submit.js
-// PUBLIC endpoint — no password required. Anyone can submit a photo, which
-// lands in a pending queue for the media team to approve or reject before
-// it appears on the public gallery. A simple honeypot field filters out
-// naive bots without adding friction for real visitors.
+// PUBLIC endpoint. Anyone can submit a photo, which lands in a pending
+// queue for the media team to approve or reject before it appears on the
+// public gallery. A simple honeypot field filters out naive bots.
+//
+// Optional access code: if you set a SUBMIT_PASSWORD environment variable
+// in Vercel, submitters must enter it (e.g. printed on a flyer at camp)
+// before their photo is accepted. If SUBMIT_PASSWORD is not set, anyone
+// with the link can submit — this is the default, unchanged behavior.
 
 const { put } = require('@vercel/blob');
 const { readIndex, writeIndex } = require('../lib/submissions-store');
@@ -26,6 +30,14 @@ module.exports = async function handler(req, res) {
   // Honeypot — real visitors never see or fill this field.
   if (body.website) {
     return res.status(200).json({ ok: true }); // pretend success, drop silently
+  }
+
+  // Optional access code — only enforced if the site owner has set one.
+  if (process.env.SUBMIT_PASSWORD) {
+    const submittedCode = String(body.password || '');
+    if (submittedCode !== process.env.SUBMIT_PASSWORD) {
+      return res.status(401).json({ error: 'Incorrect access code.' });
+    }
   }
 
   const album = String(body.album || '').toLowerCase().trim();

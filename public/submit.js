@@ -1,6 +1,7 @@
 (function () {
   const toastContainer = document.getElementById('toast-container');
   const submitterNameInput = document.getElementById('submitter-name-input');
+  const submitPasswordInput = document.getElementById('submit-password-input');
   const websiteInput = document.getElementById('website-input'); // honeypot
   const albumSelect = document.getElementById('album-select');
   const newAlbumInput = document.getElementById('new-album-input');
@@ -117,6 +118,7 @@
           filename: safeName,
           contentType,
           dataBase64,
+          password: submitPasswordInput ? submitPasswordInput.value.trim() : '',
           website: websiteInput ? websiteInput.value : '',
         }),
       });

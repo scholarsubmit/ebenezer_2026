@@ -201,9 +201,9 @@ to match, the same way described above for the social-sharing tags.
 
 ## Public photo submissions
 
-Anyone can share a photo without a password at `/submit.html` — linked from
-the footer and the Gallery toolbar on every page. Submitted photos do
-**not** go public immediately: they land in a review queue.
+Anyone can share a photo at `/submit.html` — linked from the footer and
+the Gallery toolbar on every page. Submitted photos do **not** go public
+immediately: they land in a review queue.
 
 In the admin dashboard, **Review Submissions** in the sidebar shows every
 pending photo with who submitted it (if they gave a name) and when. Click
@@ -211,13 +211,34 @@ pending photo with who submitted it (if they gave a name) and when. Click
 submitted for, or **Reject** to discard it. A red badge on the sidebar
 link shows how many are waiting.
 
-**A note on abuse:** the submit endpoint is intentionally open (no
-password) so real visitors can use it easily. It includes a basic
-honeypot field to filter simple bots, but a determined bad actor could
-still spam it — anything submitted always lands in the pending queue
-first, never directly on the public gallery, so the worst case is you
-have some junk to reject rather than junk going live. If spam becomes a
-real problem, consider adding a password to the submit page too.
+**Optional access code:** by default the submit page is open to anyone
+with the link — no password needed. It also includes a basic honeypot
+field to filter simple bots, and everything submitted always lands in
+the pending queue first (never directly on the public gallery), so the
+worst case with an open page is some junk to reject.
+
+If you'd rather require an access code (e.g. one printed on a flyer at
+camp, so only people actually there can submit):
+
+1. Vercel → Settings → Environment Variables → add `SUBMIT_PASSWORD` with
+   whatever code you choose
+2. Redeploy
+
+Once set, the submit page will reject any submission with a missing or
+wrong code — the field is already on the form (labeled "Access code")
+and just gets ignored by the server until you configure this. To go back
+to fully open, delete the `SUBMIT_PASSWORD` variable and redeploy.
+
+---
+
+## Analytics (optional)
+
+The site includes the tracking snippet needed for **Vercel Web
+Analytics** on every public page (not the admin dashboard). To turn it
+on: Vercel dashboard → your project → **Analytics** tab → **Enable**.
+No further code changes needed — it starts collecting visit data
+immediately. This is free on Vercel's Hobby plan with a monthly event
+allowance; check Vercel's current pricing if the site gets heavy traffic.
 
 ---
 
