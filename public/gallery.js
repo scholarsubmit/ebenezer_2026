@@ -280,6 +280,7 @@
   const lbCounter = document.getElementById("lightbox-counter");
   const lbDownload = document.getElementById("lightbox-download");
   const lbFav = document.getElementById("lightbox-fav");
+  const lbShare = document.getElementById("lightbox-share");
 
   let current = 0;
 
@@ -321,6 +322,9 @@
     lbCounter.textContent = `${current + 1} / ${flatPhotos.length}`;
     lbDownload.href = photo.src;
     lbDownload.setAttribute("download", (photo.alt || "photo").replace(/\s+/g, "-").toLowerCase() + ".jpg");
+    if (lbShare) {
+      lbShare.onclick = () => window.CAC_SHARE(photo.src, `${photo.alt} — EBENEZER 2026 Unity Convention`);
+    }
     const setFavState = () => {
       const active2 = FAV.isFav(photo.pathname);
       lbFav.classList.toggle("btn-gold", active2);

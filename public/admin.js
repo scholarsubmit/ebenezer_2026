@@ -22,8 +22,11 @@
   const panels = {
     upload: document.getElementById('panel-upload'),
     manage: document.getElementById('panel-manage'),
+    submissions: document.getElementById('panel-submissions'),
     speakers: document.getElementById('panel-speakers'),
   };
+  const submissionsGrid = document.getElementById('submissions-grid');
+  const submissionsBadge = document.getElementById('submissions-badge');
   const toastContainer = document.getElementById('toast-container');
   const confirmOverlay = document.getElementById('confirm-overlay');
   const confirmMessage = document.getElementById('confirm-message');
@@ -76,6 +79,7 @@
     });
     navLinks.forEach((btn) => btn.classList.toggle('active', btn.dataset.panel === name));
     if (name === 'speakers') refreshSpeakers();
+    if (name === 'submissions') refreshSubmissions();
   }
   navLinks.forEach((btn) => btn.addEventListener('click', () => switchPanel(btn.dataset.panel)));
 
@@ -108,104 +112,9 @@
   let queue = []; // { id, file, name, objectUrl, status, xhr }
   let nextId = 1;
 
-  function slugify(str) {
-    return str
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '');
-  }
-
-  function sanitizeName(name) {
-    return String(name).replace(/[^a-zA-Z0-9._-]/g, '-');
-  }
-
-  // ---------------- client-side image compression ----------------
-  // Vercel's serverless functions cap request bodies at 4.5MB, so rather
-  // than fail on large phone photos, we shrink them in the browser first
-  // (resize to a sane max dimension + re-encode as JPEG). This keeps
-  // uploads fast, keeps the gallery light for visitors on mobile data,
-  // and avoids the size limit almost entirely.
-  function compressImage(file, maxDim, quality) {
-    return new Promise((resolve, reject) => {
-      const objectUrl = URL.createObjectURL(file);
-      const img = new Image();
-      img.onload = () => {
-        let { width, height } = img;
-        if (width > maxDim || height > maxDim) {
-          if (width > height) {
-            height = Math.round((height * maxDim) / width);
-            width = maxDim;
-          } else {
-            width = Math.round((width * maxDim) / height);
-            height = maxDim;
-          }
-        }
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-        canvas.toBlob(
-          (blob) => {
-            URL.revokeObjectURL(objectUrl);
-            if (blob) resolve(blob);
-            else reject(new Error('Could not process image'));
-          },
-          'image/jpeg',
-          quality
-        );
-      };
-      img.onerror = () => {
-        URL.revokeObjectURL(objectUrl);
-        reject(new Error('Could not read image'));
-      };
-      img.src = objectUrl;
-    });
-  }
-
-  // Tries progressively smaller/lower-quality passes until the result
-  // fits comfortably under the server's limit, or gives up after a few tries.
-  // Target is lower than the server's raw limit because the file is sent
-  // as base64 text, which is ~33% larger than the original bytes.
-  async function prepareForUpload(file) {
-    const SAFE_LIMIT = 2.2 * 1024 * 1024; // ~2.2MB blob -> ~2.9MB base64, well under the 4MB server check
-    if (file.size <= SAFE_LIMIT && /^image\/(jpeg|png|webp)$/.test(file.type)) {
-      return { blob: file, renamedJpeg: false };
-    }
-    const attempts = [
-      { maxDim: 2000, quality: 0.82 },
-      { maxDim: 1600, quality: 0.78 },
-      { maxDim: 1300, quality: 0.72 },
-      { maxDim: 1000, quality: 0.68 },
-    ];
-    let lastErr;
-    for (const attempt of attempts) {
-      try {
-        const blob = await compressImage(file, attempt.maxDim, attempt.quality);
-        if (blob.size <= SAFE_LIMIT) {
-          return { blob, renamedJpeg: true };
-        }
-        lastErr = new Error('Still too large after compression');
-      } catch (err) {
-        lastErr = err;
-      }
-    }
-    throw lastErr || new Error('Could not compress image enough to upload.');
-  }
-
-  function blobToBase64(blob) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const result = String(reader.result || '');
-        const commaIdx = result.indexOf(',');
-        resolve(commaIdx >= 0 ? result.slice(commaIdx + 1) : result);
-      };
-      reader.onerror = () => reject(new Error('Could not read the compressed image'));
-      reader.readAsDataURL(blob);
-    });
-  }
+  // Compression, base64 encoding, and name-sanitizing helpers are shared
+  // with the public submission page — see img-compress.js.
+  const { slugify, sanitizeName, prepareForUpload, blobToBase64 } = window.CAC_IMG;
 
   async function fetchGallery() {
     const res = await fetch('/api/gallery', { cache: 'no-store' });
@@ -309,6 +218,7 @@
       gate.style.display = 'none';
       panel.style.display = 'block';
       await refreshAlbums();
+      fetchSubmissions().then((subs) => updateSubmissionsBadge(subs.length));
     } catch (err) {
       gateError.textContent = 'Could not reach the server. Please try again.';
       unlockBtn.disabled = false;
@@ -585,6 +495,7 @@
   const speakerNameInput = document.getElementById('speaker-name-input');
   const speakerTitleInput = document.getElementById('speaker-title-input');
   const speakerTagInput = document.getElementById('speaker-tag-input');
+  const speakerBioInput = document.getElementById('speaker-bio-input');
   const speakerDropzone = document.getElementById('speaker-dropzone');
   const speakerDropzoneText = document.getElementById('speaker-dropzone-text');
   const speakerFileInput = document.getElementById('speaker-file-input');
@@ -693,6 +604,7 @@
             name,
             title: speakerTitleInput.value.trim(),
             tag: speakerTagInput.value.trim(),
+            bio: speakerBioInput.value.trim(),
             contentType,
             dataBase64,
           }),
@@ -704,6 +616,7 @@
         speakerNameInput.value = '';
         speakerTitleInput.value = '';
         speakerTagInput.value = '';
+        speakerBioInput.value = '';
         speakerFile = null;
         speakerPreviewWrap.style.display = 'none';
         speakerDropzoneText.textContent = 'Tap to choose a photo, or drag & drop here';
@@ -716,6 +629,93 @@
         updateSpeakerSaveState();
       }
     });
+  }
+
+  // ---------------- Submission review ----------------
+
+  async function fetchSubmissions() {
+    try {
+      const res = await fetch('/api/submissions', {
+        cache: 'no-store',
+        headers: { 'x-admin-password': password },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not load submissions');
+      return data.submissions || [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function updateSubmissionsBadge(count) {
+    if (!submissionsBadge) return;
+    if (count > 0) {
+      submissionsBadge.textContent = String(count);
+      submissionsBadge.style.display = 'inline-flex';
+    } else {
+      submissionsBadge.style.display = 'none';
+    }
+  }
+
+  async function refreshSubmissions() {
+    const submissions = await fetchSubmissions();
+    updateSubmissionsBadge(submissions.length);
+
+    if (!submissionsGrid) return;
+    submissionsGrid.innerHTML = '';
+    if (submissions.length === 0) {
+      submissionsGrid.innerHTML = '<p class="admin-hint">No pending submissions right now.</p>';
+      return;
+    }
+
+    submissions.forEach((s) => {
+      const when = s.submittedAt ? new Date(s.submittedAt).toLocaleString() : '';
+      const who = s.submitterName ? `From ${s.submitterName}` : 'Submitted anonymously';
+      const card = document.createElement('div');
+      card.className = 'submission-card';
+      card.innerHTML = `
+        <div class="thumb"><img src="${s.url}" alt="Submitted photo for ${s.album}" loading="lazy" /></div>
+        <div class="info">
+          <p class="album">${s.album}</p>
+          <p class="meta">${who} · ${when}</p>
+          <div class="submission-actions">
+            <button type="button" class="submission-approve">Approve</button>
+            <button type="button" class="submission-reject">Reject</button>
+          </div>
+        </div>
+      `;
+      card.querySelector('.submission-approve').addEventListener('click', () => reviewSubmission(s.id, 'approve', card));
+      card.querySelector('.submission-reject').addEventListener('click', () => reviewSubmission(s.id, 'reject', card));
+      submissionsGrid.appendChild(card);
+    });
+  }
+
+  async function reviewSubmission(id, action, cardEl) {
+    if (action === 'reject') {
+      const ok = await showConfirm('Reject and permanently discard this photo?');
+      if (!ok) return;
+    }
+    cardEl.style.opacity = '0.4';
+    const endpoint = action === 'approve' ? '/api/submissions-approve' : '/api/submissions-reject';
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-password': password },
+        body: JSON.stringify({ id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `Could not ${action} submission`);
+      cardEl.remove();
+      updateSubmissionsBadge((data.submissions || []).length);
+      showToast(action === 'approve' ? 'Photo approved and added to the gallery.' : 'Photo rejected.', 'success');
+      if (action === 'approve') await refreshAlbums();
+      if (submissionsGrid && submissionsGrid.children.length === 0) {
+        submissionsGrid.innerHTML = '<p class="admin-hint">No pending submissions right now.</p>';
+      }
+    } catch (err) {
+      showToast(err.message || `Could not ${action} this submission.`, 'error');
+      cardEl.style.opacity = '1';
+    }
   }
 
   unlockBtn.addEventListener('click', unlock);
@@ -749,5 +749,6 @@
     gate.style.display = 'none';
     panel.style.display = 'block';
     refreshAlbums();
+    fetchSubmissions().then((subs) => updateSubmissionsBadge(subs.length));
   }
 })();

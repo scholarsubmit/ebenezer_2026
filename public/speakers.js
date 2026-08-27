@@ -81,9 +81,11 @@
   const track = document.getElementById("lightbox-track");
   const filmstrip = document.getElementById("lightbox-filmstrip");
   const lbCaption = document.getElementById("lightbox-caption");
+  const lbBio = document.getElementById("lightbox-bio");
   const lbCounter = document.getElementById("lightbox-counter");
   const lbDownload = document.getElementById("lightbox-download");
   const lbFav = document.getElementById("lightbox-fav");
+  const lbShare = document.getElementById("lightbox-share");
 
   let current = 0;
 
@@ -122,9 +124,13 @@
     const s = currentList[current];
     if (!s) return;
     lbCaption.textContent = [s.name, s.title].filter(Boolean).join(" — ");
+    if (lbBio) lbBio.textContent = s.bio || "";
     lbCounter.textContent = `${current + 1} / ${currentList.length}`;
     lbDownload.href = s.photoUrl;
     lbDownload.setAttribute("download", `${s.name.replace(/\s+/g, "-").toLowerCase()}.jpg`);
+    if (lbShare) {
+      lbShare.onclick = () => window.CAC_SHARE(s.photoUrl, `${s.name} — EBENEZER 2026 Unity Convention`);
+    }
     const setFavState = () => {
       const active2 = FAV.isFav(s.id);
       lbFav.classList.toggle("btn-gold", active2);

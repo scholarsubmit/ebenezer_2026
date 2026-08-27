@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Submit a Photo — EBENEZER 2026</title>
+<meta name="description" content="Share your photos from the EBENEZER 2026 Unity Convention — every submission is reviewed by the media team before it goes public." />
+
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Christ Ascension Church — EBENEZER 2026" />
+<meta property="og:title" content="Submit a Photo — EBENEZER 2026" />
+<meta property="og:description" content="Share your photos from the EBENEZER 2026 Unity Convention — every submission is reviewed by the media team before it goes public." />
+<meta property="og:image" content="https://ebenezer2026.vercel.app/images/ebenezer-2026-banner.png" />
+<meta property="og:image:width" content="614" />
+<meta property="og:image:height" content="419" />
+<meta property="og:url" content="https://ebenezer2026.vercel.app/submit.html" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Submit a Photo — EBENEZER 2026" />
+<meta name="twitter:description" content="Share your photos from the EBENEZER 2026 Unity Convention." />
+<meta name="twitter:image" content="https://ebenezer2026.vercel.app/images/ebenezer-2026-banner.png" />
+<link rel="canonical" href="https://ebenezer2026.vercel.app/submit.html" />
+
+<link rel="manifest" href="/manifest.json" />
+<meta name="theme-color" content="#080d17" />
+<link rel="apple-touch-icon" href="/images/apple-touch-icon.png" />
+<link rel="icon" href="/images/logo.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+
+<div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+<header class="site-header">
+  <nav class="nav">
+    <a class="brand" href="/">
+      <img src="/images/logo.png" alt="Christ Ascension Church crest" />
+      <span class="brand-text">
+        <strong>Christ Ascension Church</strong>
+        <span>Lifters Power Assembly</span>
+      </span>
+    </a>
+    <button class="nav-toggle" aria-label="Toggle menu">Menu</button>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="/gallery.html">Gallery</a>
+      <a href="/speakers.html">Speakers</a>
+      <a href="/about.html">About</a>
+    </div>
+  </nav>
+</header>
+
+<section class="page-hero">
+  <p class="eyebrow">Share Your Moment</p>
+  <h1>Submit a Photo</h1>
+  <p>Have photos from EBENEZER 2026 on your phone? Share them here — every submission is reviewed by
+  the media team before it appears in the public archive, so please only submit photos you took or
+  have permission to share.</p>
+</section>
+
+<section class="section" style="max-width:720px; margin:0 auto;">
+  <div class="wrap" style="max-width:100%;">
+
+    <div class="admin-card">
+      <h3>1. Your name (optional)</h3>
+      <p class="admin-hint">Lets the media team credit you — leave blank to stay anonymous.</p>
+      <div class="admin-row">
+        <input type="text" id="submitter-name-input" placeholder="Your name" />
+      </div>
+      <!-- Honeypot — hidden from real visitors, filters simple bots -->
+      <div style="position:absolute; left:-9999px; opacity:0; height:0; overflow:hidden;" aria-hidden="true">
+        <label>Leave this field empty<input type="text" id="website-input" name="website" tabindex="-1" autocomplete="off" /></label>
+      </div>
+    </div>
+
+    <div class="admin-card">
+      <h3>2. Which session is this from?</h3>
+      <p class="admin-hint">Pick an existing session, or type a new one if you're not sure which it belongs to.</p>
+      <div class="admin-row">
+        <select id="album-select">
+          <option value="">— Select a session —</option>
+        </select>
+        <span style="align-self:center; color:var(--text-lo); font-size:0.85rem;">or</span>
+        <input type="text" id="new-album-input" placeholder="New session name" />
+      </div>
+    </div>
+
+    <div class="admin-card">
+      <h3>3. Add your photos</h3>
+      <p class="admin-hint">Select multiple photos at once, or drag them in. Large photos are automatically shrunk before sending.</p>
+      <label class="dropzone" id="dropzone" for="file-input">
+        <span id="dropzone-text">Tap to choose photos, or drag &amp; drop here</span>
+        <input type="file" id="file-input" accept="image/*" multiple style="display:none;" />
+      </label>
+      <ul class="upload-list" id="upload-list"></ul>
+      <p class="admin-hint" id="overall-status" style="margin: 10px 0 0;"></p>
+      <div class="admin-row" style="margin-top:10px;">
+        <button class="btn btn-gold" id="submit-btn" type="button" disabled>Submit Photos for Review</button>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="footer-grid">
+    <div>
+      <div class="footer-brand">
+        <img src="/images/logo.png" alt="Christ Ascension Church crest" />
+        <strong>Christ Ascension Church</strong>
+      </div>
+      <p>Lifters Power Assembly · 1984 Foundation Constitution</p>
+    </div>
+    <div>
+      <h4>Explore</h4>
+      <p><a href="/">Home</a></p>
+      <p><a href="/gallery.html">Photo Archive</a></p>
+      <p><a href="/speakers.html">Speakers</a></p>
+      <p><a href="/about.html">About</a></p>
+    </div>
+    <div>
+      <h4>Media Team</h4>
+      <p><a href="/admin.html">Committee Upload</a></p>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© <span id="year"></span> Christ Ascension Church — Lifters Power Assembly</span>
+    <span>EBENEZER 2026 Unity Convention Archive</span>
+  </div>
+</footer>
+
+<script src="/site.js"></script>
+<script src="/img-compress.js"></script>
+<script src="/submit.js"></script>
+<script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+</body>
+</html>

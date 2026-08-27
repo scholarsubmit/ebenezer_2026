@@ -131,6 +131,43 @@ rather than day-to-day photo uploads.
 
 ---
 
+## Public photo submissions
+
+Anyone can share a photo without a password at `/submit.html` — linked from
+the footer and the Gallery toolbar on every page. Submitted photos do
+**not** go public immediately: they land in a review queue.
+
+In the admin dashboard, **Review Submissions** in the sidebar shows every
+pending photo with who submitted it (if they gave a name) and when. Click
+**Approve** to move it into the real gallery under the session it was
+submitted for, or **Reject** to discard it. A red badge on the sidebar
+link shows how many are waiting.
+
+**A note on abuse:** the submit endpoint is intentionally open (no
+password) so real visitors can use it easily. It includes a basic
+honeypot field to filter simple bots, but a determined bad actor could
+still spam it — anything submitted always lands in the pending queue
+first, never directly on the public gallery, so the worst case is you
+have some junk to reject rather than junk going live. If spam becomes a
+real problem, consider adding a password to the submit page too.
+
+---
+
+## Social sharing & installing as an app
+
+- Every page has Open Graph/Twitter preview tags, so links shared in
+  WhatsApp, Facebook, etc. show your convention banner with a title and
+  description instead of a blank link.
+- These tags currently point to `https://ebenezer2026.vercel.app` — if
+  your site ends up on a different domain, update the `og:url`,
+  `og:image`, `twitter:image`, and `<link rel="canonical">` values across
+  `index.html`, `gallery.html`, `speakers.html`, `about.html`, and
+  `submit.html` to match.
+- The site has a `manifest.json` and app icons, so phones will offer
+  "Add to Home Screen" — it opens full-screen like a native app.
+
+---
+
 ## Managing speakers
 
 From the admin dashboard, click **Manage Speakers** in the sidebar:
@@ -165,29 +202,40 @@ ebenezer2026/
 │   ├── gallery.html        Photo archive page (album cards + pagination)
 │   ├── speakers.html       Speakers page
 │   ├── about.html          About page
+│   ├── submit.html         Public photo submission page (no password)
+│   ├── submit.js           Submission form logic
 │   ├── admin.html          Password-protected media team dashboard
-│   ├── admin.js            Upload / manage photos / manage speakers logic
+│   ├── admin.js            Upload / manage photos / speakers / review submissions
 │   ├── styles.css          All site styling (single unified theme)
 │   ├── site.js             Shared nav behavior
 │   ├── gallery.js          Gallery rendering, pagination, carousel lightbox
 │   ├── speakers.js         Speakers rendering + carousel lightbox
 │   ├── favorites.js        Shared client-side favorites (localStorage)
+│   ├── share.js            Shared "Share" (native share sheet / WhatsApp)
+│   ├── img-compress.js     Shared client-side photo compression
 │   ├── home-preview.js     Home page stats + recent photos
-│   └── images/             Church crest, convention banner, speaker seed photos
+│   ├── manifest.json       PWA manifest ("Add to Home Screen")
+│   └── images/             Crest, convention banner, speaker photos, app icons
 ├── api/
-│   ├── upload.js           Serverless function: receives + stores photos
-│   ├── gallery.js          Serverless function: lists all stored photos
-│   ├── delete.js           Serverless function: removes a photo
-│   ├── speakers.js         Serverless function: lists all speakers
-│   ├── speakers-save.js    Serverless function: adds a speaker
-│   ├── speakers-delete.js  Serverless function: removes a speaker
-│   └── health.js           Diagnostic endpoint — visit /api/health to check config
+│   ├── upload.js                Serverless function: receives + stores photos
+│   ├── gallery.js                Serverless function: lists all stored photos
+│   ├── delete.js                 Serverless function: removes a photo
+│   ├── speakers.js               Serverless function: lists all speakers
+│   ├── speakers-save.js          Serverless function: adds a speaker
+│   ├── speakers-delete.js        Serverless function: removes a speaker
+│   ├── submit.js                 Public: accepts a photo submission (pending queue)
+│   ├── submissions.js            Admin: lists pending submissions
+│   ├── submissions-approve.js    Admin: moves a submission into the gallery
+│   ├── submissions-reject.js     Admin: discards a submission
+│   └── health.js                 Diagnostic endpoint — visit /api/health to check config
 ├── lib/
-│   └── speakers-store.js   Shared read/write helper for the speakers JSON index
+│   ├── speakers-store.js     Shared read/write helper for the speakers JSON index
+│   └── submissions-store.js  Shared read/write helper for the pending-submissions index
 ├── package.json             Declares the @vercel/blob dependency
 ├── vercel.json              Vercel configuration
 └── README.md                 This file
 ```
 
 No database to manage, no paid plan required, and no ongoing maintenance
-beyond uploading photos and managing speakers through the admin dashboard.
+beyond uploading photos, managing speakers, and reviewing submissions
+through the admin dashboard.
