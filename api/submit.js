@@ -43,6 +43,7 @@ module.exports = async function handler(req, res) {
   const album = String(body.album || '').toLowerCase().trim();
   const filename = String(body.filename || '').trim();
   const submitterName = String(body.submitterName || '').trim().slice(0, 80);
+  const testimony = String(body.testimony || '').trim().slice(0, 500);
   const { contentType, dataBase64 } = body;
 
   const safeAlbum = album.replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '');
@@ -75,6 +76,7 @@ module.exports = async function handler(req, res) {
       id: `sub-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       album: safeAlbum,
       submitterName,
+      testimony,
       pathname: blob.pathname,
       url: blob.url,
       contentType: contentType || 'application/octet-stream',

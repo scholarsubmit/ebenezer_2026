@@ -1,9 +1,11 @@
 // api/submissions-approve.js — password-protected. Moves a pending photo
 // into the real public gallery (Blob has no native "move", so we fetch
 // the bytes, re-store them under gallery/, then remove the pending copy).
+// If the submitter left a testimony, it's carried over to the new photo.
 
 const { put, del } = require('@vercel/blob');
 const { readIndex, writeIndex } = require('../lib/submissions-store');
+const captionsStore = require('../lib/captions-store');
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -40,6 +42,17 @@ module.exports = async function handler(req, res) {
       access: 'public',
       contentType: target.contentType || 'application/octet-stream',
     });
+
+    if (target.testimony) {
+      try {
+        const captions = await captionsStore.readIndex();
+        captions[key] = target.testimony;
+        await captionsStore.writeIndex(captions);
+      } catch (e) {
+        console.error('Could not carry over testimony:', e);
+        // not fatal — the photo itself is still approved successfully
+      }
+    }
 
     try { await del(target.pathname); } catch (e) { /* already gone — ignore */ }
 

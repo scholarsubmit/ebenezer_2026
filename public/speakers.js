@@ -11,6 +11,10 @@
   const sortSelect = document.getElementById("sort-select");
   const FAV = window.CAC_FAV;
 
+  grid.innerHTML = Array.from({ length: 6 })
+    .map(() => '<div class="skeleton-card"></div>')
+    .join("");
+
   let speakers = [];
   let albumTitleBySlug = {};
   try {
@@ -72,6 +76,14 @@
 
   render(speakers);
 
+  if (window.CAC_TIP) {
+    window.CAC_TIP.showOnce(
+      document.querySelector(".section .wrap"),
+      "speakers_intro",
+      "Tip: tap a speaker's portrait for the full view, their bio, and photos from their session ✨"
+    );
+  }
+
   function applyFilters() {
     const q = searchInput.value.trim().toLowerCase();
     let list = q
@@ -91,6 +103,7 @@
   const lbCaption = document.getElementById("lightbox-caption");
   const lbBio = document.getElementById("lightbox-bio");
   const lbSessionLink = document.getElementById("lightbox-session-link");
+  const reactionBar = document.getElementById("reaction-bar");
   const lbCounter = document.getElementById("lightbox-counter");
   const lbDownload = document.getElementById("lightbox-download");
   const lbFav = document.getElementById("lightbox-fav");
@@ -149,6 +162,18 @@
     lbDownload.setAttribute("download", `${s.name.replace(/\s+/g, "-").toLowerCase()}.jpg`);
     if (lbShare) {
       lbShare.onclick = () => window.CAC_SHARE(s.photoUrl, `${s.name} — EBENEZER 2026 Unity Convention`);
+    }
+    if (reactionBar && window.CAC_REACT) {
+      const REACT = window.CAC_REACT;
+      reactionBar.innerHTML = REACT.EMOJIS.map(
+        (e) => `<button type="button" class="reaction-btn ${REACT.get(s.id) === e ? "active" : ""}" data-emoji="${e}">${e}</button>`
+      ).join("");
+      reactionBar.querySelectorAll(".reaction-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          REACT.set(s.id, btn.dataset.emoji);
+          reactionBar.querySelectorAll(".reaction-btn").forEach((b) => b.classList.toggle("active", b.dataset.emoji === REACT.get(s.id)));
+        });
+      });
     }
     const setFavState = () => {
       const active2 = FAV.isFav(s.id);

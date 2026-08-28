@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script>(function(){try{if(localStorage.getItem('ebenezer_theme')==='light')document.documentElement.classList.add('light-theme');}catch(e){}})();</script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Speakers — EBENEZER 2026</title>
@@ -29,7 +30,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="/styles.css" />
 </head>
-<body>
+<body class="has-mobile-tabbar">
 
 <header class="site-header">
   <nav class="nav">
@@ -40,6 +41,7 @@
         <span>Lifters Power Assembly</span>
       </span>
     </a>
+    <button type="button" class="theme-toggle-btn" aria-label="Toggle theme"></button>
     <button class="nav-toggle" aria-label="Toggle menu">Menu</button>
     <div class="nav-links">
       <a href="/">Home</a>
@@ -94,6 +96,7 @@
   <p class="lightbox-caption" id="lightbox-caption"></p>
   <p class="lightbox-bio" id="lightbox-bio"></p>
   <p style="text-align:center; padding:0 20px;"><a class="speaker-session-link" id="lightbox-session-link" href="#" style="display:none;"></a></p>
+  <div class="reaction-bar" id="reaction-bar"></div>
   <div class="lightbox-actions">
     <a class="btn btn-gold" id="lightbox-download" download>Download</a>
     <button class="btn btn-ghost" id="lightbox-share" type="button">Share</button>
@@ -132,8 +135,18 @@
   </div>
 </footer>
 
+<nav class="mobile-tabbar" aria-label="Mobile navigation">
+  <a href="/"><span class="tab-icon">🏠</span>Home</a>
+  <a href="/gallery.html"><span class="tab-icon">🖼️</span>Gallery</a>
+  <a href="/speakers.html"><span class="tab-icon">🎤</span>Speakers</a>
+  <a href="/submit.html"><span class="tab-icon">📤</span>Submit</a>
+</nav>
+
 <script src="/site.js"></script>
+<script src="/theme.js"></script>
 <script src="/favorites.js"></script>
+<script src="/reactions.js"></script>
+<script src="/tips.js"></script>
 <script src="/share.js"></script>
 <script src="/speakers.js"></script>
 <script>document.getElementById('year').textContent = new Date().getFullYear();</script>

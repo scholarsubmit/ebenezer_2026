@@ -21,6 +21,13 @@
   const paginationEl = document.getElementById("pagination");
   const viewGridBtn = document.getElementById("view-grid");
   const viewListBtn = document.getElementById("view-list");
+  const surpriseBtn = document.getElementById("surprise-btn");
+
+  // Show skeleton placeholder cards immediately, before the fetch resolves,
+  // so the page never feels like it's just sitting blank.
+  albumsGrid.innerHTML = Array.from({ length: 8 })
+    .map(() => '<div class="skeleton-card"></div>')
+    .join("");
 
   let data;
   let speakersData = { speakers: [] };
@@ -299,6 +306,23 @@
 
   renderAlbumsView();
 
+  if (window.CAC_TIP) {
+    window.CAC_TIP.showOnce(
+      document.querySelector(".pa-content .wrap"),
+      "gallery_favorites",
+      "Tip: tap the heart on any photo to save it to your favorites ❤️ — and try 🎲 Surprise Me above to jump to a random moment."
+    );
+  }
+
+  if (surpriseBtn) {
+    surpriseBtn.addEventListener("click", () => {
+      if (allPhotosFlat.length === 0) return;
+      const idx = Math.floor(Math.random() * allPhotosFlat.length);
+      flatPhotos = allPhotosFlat;
+      openLightbox(idx);
+    });
+  }
+
   // Deep link support: /gallery.html?album=<slug> opens straight into that session
   const deepLinkAlbum = new URLSearchParams(location.search).get("album");
   if (deepLinkAlbum && albums.some((a) => a.slug === deepLinkAlbum)) {
@@ -311,6 +335,8 @@
   const track = document.getElementById("lightbox-track");
   const filmstrip = document.getElementById("lightbox-filmstrip");
   const lbCaption = document.getElementById("lightbox-caption");
+  const lbTestimony = document.getElementById("lightbox-testimony");
+  const reactionBar = document.getElementById("reaction-bar");
   const lbCounter = document.getElementById("lightbox-counter");
   const lbDownload = document.getElementById("lightbox-download");
   const lbFav = document.getElementById("lightbox-fav");
@@ -358,6 +384,26 @@
     lbDownload.setAttribute("download", (photo.alt || "photo").replace(/\s+/g, "-").toLowerCase() + ".jpg");
     if (lbShare) {
       lbShare.onclick = () => window.CAC_SHARE(photo.src, `${photo.alt} — EBENEZER 2026 Unity Convention`);
+    }
+    if (lbTestimony) {
+      if (photo.testimony) {
+        lbTestimony.textContent = `"${photo.testimony}"`;
+        lbTestimony.style.display = "block";
+      } else {
+        lbTestimony.style.display = "none";
+      }
+    }
+    if (reactionBar && window.CAC_REACT) {
+      const REACT = window.CAC_REACT;
+      reactionBar.innerHTML = REACT.EMOJIS.map(
+        (e) => `<button type="button" class="reaction-btn ${REACT.get(photo.pathname) === e ? "active" : ""}" data-emoji="${e}">${e}</button>`
+      ).join("");
+      reactionBar.querySelectorAll(".reaction-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          REACT.set(photo.pathname, btn.dataset.emoji);
+          reactionBar.querySelectorAll(".reaction-btn").forEach((b) => b.classList.toggle("active", b.dataset.emoji === REACT.get(photo.pathname)));
+        });
+      });
     }
     const setFavState = () => {
       const active2 = FAV.isFav(photo.pathname);

@@ -5,6 +5,7 @@
 // uploaded photos appear immediately — no rebuild, no redeploy.
 
 const { list } = require('@vercel/blob');
+const { readIndex: readCaptions } = require('../lib/captions-store');
 
 function titleCase(slug) {
   return slug
@@ -25,6 +26,7 @@ module.exports = async function handler(req, res) {
       cursor = result.cursor;
     } while (cursor);
 
+    const captions = await readCaptions();
     const albumsMap = new Map();
 
     for (const b of all) {
@@ -38,6 +40,7 @@ module.exports = async function handler(req, res) {
         pathname: b.pathname,
         uploadedAt: b.uploadedAt,
         size: b.size || 0,
+        testimony: captions[b.pathname] || null,
       });
     }
 

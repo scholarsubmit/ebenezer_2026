@@ -1,6 +1,6 @@
 // Populates the home page "glimpses" grid with up to 10 recent photos,
-// and fills in the real stats row (photos / sessions / speakers) from
-// the live APIs. No fabricated numbers.
+// animates the real stats row (photos / sessions / speakers) counting up
+// from 0, and shows skeleton cards while everything loads.
 (async function () {
   const grid = document.getElementById("preview-grid");
   const section = document.getElementById("preview-section");
@@ -8,6 +8,26 @@
   const statSessions = document.getElementById("stat-sessions");
   const statSpeakers = document.getElementById("stat-speakers");
   const FAV = window.CAC_FAV;
+
+  if (grid) {
+    grid.innerHTML = Array.from({ length: 5 })
+      .map(() => '<div class="skeleton-card"></div>')
+      .join("");
+  }
+
+  function animateCount(el, target, duration = 900) {
+    if (!el) return;
+    if (target === 0) { el.textContent = "0"; return; }
+    const start = performance.now();
+    function tick(now) {
+      const progress = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+      el.textContent = Math.round(eased * target).toLocaleString();
+      if (progress < 1) requestAnimationFrame(tick);
+      else el.textContent = target.toLocaleString();
+    }
+    requestAnimationFrame(tick);
+  }
 
   let galleryData = { albums: [] };
   let speakersData = { speakers: [] };
@@ -30,9 +50,9 @@
   const photos = albums.flatMap((a) => a.photos);
   const speakers = speakersData.speakers || [];
 
-  if (statPhotos) statPhotos.textContent = photos.length.toLocaleString();
-  if (statSessions) statSessions.textContent = albums.length.toLocaleString();
-  if (statSpeakers) statSpeakers.textContent = speakers.length.toLocaleString();
+  animateCount(statPhotos, photos.length);
+  animateCount(statSessions, albums.length);
+  animateCount(statSpeakers, speakers.length);
 
   if (!grid) return;
 

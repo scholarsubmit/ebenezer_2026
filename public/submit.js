@@ -2,6 +2,7 @@
   const toastContainer = document.getElementById('toast-container');
   const submitterNameInput = document.getElementById('submitter-name-input');
   const submitPasswordInput = document.getElementById('submit-password-input');
+  const testimonyInput = document.getElementById('testimony-input');
   const websiteInput = document.getElementById('website-input'); // honeypot
   const albumSelect = document.getElementById('album-select');
   const newAlbumInput = document.getElementById('new-album-input');
@@ -96,7 +97,7 @@
   dropzone.addEventListener('drop', (e) => { if (e.dataTransfer.files.length) addFiles(e.dataTransfer.files); });
 
   // ---------------- submit ----------------
-  async function submitOne(item, albumSlug, submitterName) {
+  async function submitOne(item, albumSlug, submitterName, testimony) {
     const statusEl = () => uploadList.querySelector(`[data-status-id="${item.id}"]`);
     const barEl = () => uploadList.querySelector(`[data-bar-id="${item.id}"]`);
     item.status = 'uploading';
@@ -115,6 +116,7 @@
         body: JSON.stringify({
           album: albumSlug,
           submitterName,
+          testimony,
           filename: safeName,
           contentType,
           dataBase64,
@@ -143,12 +145,13 @@
     if (toSend.length === 0) return;
 
     const submitterName = submitterNameInput.value.trim();
+    const testimony = testimonyInput ? testimonyInput.value.trim() : '';
     submitBtn.disabled = true;
     submitBtn.textContent = 'Sending…';
 
     for (let i = 0; i < toSend.length; i++) {
       overallStatus.textContent = `Sending photo ${i + 1} of ${toSend.length}…`;
-      await submitOne(toSend[i], albumSlug, submitterName);
+      await submitOne(toSend[i], albumSlug, submitterName, testimony);
     }
 
     const doneCount = toSend.filter((q) => q.status === 'done').length;

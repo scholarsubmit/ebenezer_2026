@@ -131,6 +131,36 @@ rather than day-to-day photo uploads.
 
 ---
 
+## UI/UX polish
+
+A batch of small touches that add up:
+
+- **Light/dark theme toggle** — the ☀️/🌙 button in the nav on every
+  public page. Saved per-device, applied instantly with no flash of the
+  wrong theme on reload.
+- **Mobile bottom tab bar** — Home/Gallery/Speakers/Submit, fixed at the
+  bottom of the screen on phones, so the site feels like an installed app
+  rather than a website in a browser wrapper.
+- **Soft page transitions** — a brief fade between pages on internal
+  navigation.
+- **Skeleton loading placeholders** — shimmering cards while the gallery,
+  speakers, and homepage preview load, instead of blank space.
+- **Animated stat counters** — the homepage numbers count up on load
+  rather than just appearing.
+- **🎲 Surprise Me** — a button on the Gallery toolbar that jumps straight
+  to a random photo from the whole archive.
+- **Emoji reactions** — 🙌 🔥 🙏 under any photo or speaker in the
+  lightbox. Like Favorites, these are saved only on the visitor's own
+  device — there's no public reaction count.
+- **First-visit tips** — small dismissible hints shown once per device on
+  the Gallery and Speakers pages, never repeated after.
+- **Testimony captions** — the submit form has an optional "What happened
+  here?" field. If filled in, it's carried through to the approved photo
+  and shown as a quote in the lightbox — ties the archive back to its
+  actual purpose rather than being just a picture dump.
+
+---
+
 ## Backup & export
 
 **This matters — please read.** Everything on this site (every photo,
@@ -295,14 +325,17 @@ ebenezer2026/
 │   ├── submit.js           Submission form logic
 │   ├── admin.html          Password-protected media team dashboard
 │   ├── admin.js            Upload / manage photos / speakers / review submissions
-│   ├── styles.css          All site styling (single unified theme)
-│   ├── site.js             Shared nav behavior
+│   ├── styles.css          All site styling (single unified theme + light mode)
+│   ├── site.js             Shared nav behavior + page fade transitions
+│   ├── theme.js            Light/dark theme toggle
 │   ├── gallery.js          Gallery rendering, pagination, carousel lightbox
 │   ├── speakers.js         Speakers rendering + carousel lightbox
 │   ├── favorites.js        Shared client-side favorites (localStorage)
+│   ├── reactions.js        Shared client-side emoji reactions (localStorage)
+│   ├── tips.js              Shared first-visit dismissible tips
 │   ├── share.js            Shared "Share" (native share sheet / WhatsApp)
 │   ├── img-compress.js     Shared client-side photo compression
-│   ├── home-preview.js     Home page stats + recent/highlight photos
+│   ├── home-preview.js     Home page animated stats + recent/highlight photos
 │   ├── manifest.json       PWA manifest ("Add to Home Screen")
 │   ├── robots.txt          Search engine crawl rules
 │   ├── sitemap.xml         Search engine page list
@@ -324,7 +357,8 @@ ebenezer2026/
 ├── lib/
 │   ├── speakers-store.js     Shared read/write helper for the speakers JSON index
 │   ├── featured-store.js     Shared read/write helper for the highlights JSON index
-│   └── submissions-store.js  Shared read/write helper for the pending-submissions index
+│   ├── submissions-store.js  Shared read/write helper for the pending-submissions index
+│   └── captions-store.js     Shared read/write helper for testimony captions
 ├── package.json             Declares the @vercel/blob dependency
 ├── vercel.json              Vercel configuration
 └── README.md                 This file

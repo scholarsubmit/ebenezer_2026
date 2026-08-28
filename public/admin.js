@@ -794,6 +794,7 @@
         <div class="info">
           <p class="album">${s.album}</p>
           <p class="meta">${who} · ${when}</p>
+          ${s.testimony ? `<p class="submission-testimony">"${s.testimony}"</p>` : ''}
           <div class="submission-actions">
             <button type="button" class="submission-approve">Approve</button>
             <button type="button" class="submission-reject">Reject</button>
