@@ -314,6 +314,14 @@ device and requires no account. Saved photos appear under the
 
 ## Project structure
 
+**Note on the api/ folder:** Vercel's free Hobby plan caps deployments at
+12 serverless functions. To leave headroom, related actions are combined
+into one file each, dispatched by HTTP method (and an `action` field
+where needed) rather than one file per action — e.g. `api/speakers.js`
+handles GET (list), POST (add), and DELETE (remove) all in one function.
+If you add new admin actions later, prefer extending an existing file
+this way over adding a new one, to stay comfortably under that limit.
+
 ```
 ebenezer2026/
 ├── public/
@@ -341,19 +349,14 @@ ebenezer2026/
 │   ├── sitemap.xml         Search engine page list
 │   └── images/             Crest, convention banner, speaker photos, app icons
 ├── api/
-│   ├── upload.js                Serverless function: receives + stores photos
-│   ├── gallery.js                Serverless function: lists all stored photos
-│   ├── delete.js                 Serverless function: removes a photo
-│   ├── speakers.js               Serverless function: lists all speakers
-│   ├── speakers-save.js          Serverless function: adds a speaker
-│   ├── speakers-delete.js        Serverless function: removes a speaker
-│   ├── submit.js                 Public: accepts a photo submission (pending queue)
-│   ├── submissions.js            Admin: lists pending submissions
-│   ├── submissions-approve.js    Admin: moves a submission into the gallery
-│   ├── submissions-reject.js     Admin: discards a submission
-│   ├── featured.js               Public: lists homepage-highlight photos
-│   ├── featured-toggle.js        Admin: pins/unpins a photo as a highlight
-│   └── health.js                 Diagnostic endpoint — visit /api/health to check config
+│   ├── upload.js       Serverless function: receives + stores photos
+│   ├── gallery.js       Serverless function: lists all stored photos + testimony captions
+│   ├── delete.js        Serverless function: removes a photo
+│   ├── speakers.js      GET list / POST add / DELETE remove a speaker (merged into one file — see note below)
+│   ├── submit.js        Public: accepts a photo submission (pending queue)
+│   ├── submissions.js   GET list / POST {action:"approve"|"reject"} a submission (merged)
+│   ├── featured.js      GET list / POST toggle a homepage-highlight photo (merged)
+│   └── health.js        Diagnostic endpoint — visit /api/health to check config
 ├── lib/
 │   ├── speakers-store.js     Shared read/write helper for the speakers JSON index
 │   ├── featured-store.js     Shared read/write helper for the highlights JSON index

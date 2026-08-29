@@ -266,7 +266,7 @@
     const starBtn = cellEl.querySelector('.manage-star');
     starBtn.disabled = true;
     try {
-      const res = await fetch('/api/featured-toggle', {
+      const res = await fetch('/api/featured', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-admin-password': password },
         body: JSON.stringify({ pathname }),
@@ -678,8 +678,8 @@
     if (!ok) return;
     cellEl.style.opacity = '0.4';
     try {
-      const res = await fetch('/api/speakers-delete', {
-        method: 'POST',
+      const res = await fetch('/api/speakers', {
+        method: 'DELETE',
         headers: { 'Content-Type': 'application/json', 'x-admin-password': password },
         body: JSON.stringify({ id }),
       });
@@ -706,7 +706,7 @@
         const dataBase64 = await blobToBase64(prepared.blob);
         const contentType = prepared.renamedJpeg ? 'image/jpeg' : (speakerFile.type || 'image/jpeg');
 
-        const res = await fetch('/api/speakers-save', {
+        const res = await fetch('/api/speakers', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'x-admin-password': password },
           body: JSON.stringify({
@@ -813,12 +813,11 @@
       if (!ok) return;
     }
     cardEl.style.opacity = '0.4';
-    const endpoint = action === 'approve' ? '/api/submissions-approve' : '/api/submissions-reject';
     try {
-      const res = await fetch(endpoint, {
+      const res = await fetch('/api/submissions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-admin-password': password },
-        body: JSON.stringify({ id }),
+        body: JSON.stringify({ id, action }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || `Could not ${action} submission`);
@@ -851,14 +850,13 @@
     otherBtn.disabled = true;
     btn.textContent = action === 'approve' ? 'Approving…' : 'Rejecting…';
 
-    const endpoint = action === 'approve' ? '/api/submissions-approve' : '/api/submissions-reject';
     let succeeded = 0;
     for (const id of ids) {
       try {
-        const res = await fetch(endpoint, {
+        const res = await fetch('/api/submissions', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'x-admin-password': password },
-          body: JSON.stringify({ id }),
+          body: JSON.stringify({ id, action }),
         });
         if (res.ok) succeeded++;
       } catch (e) { /* continue with the rest */ }
